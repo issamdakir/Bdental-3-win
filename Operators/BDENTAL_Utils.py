@@ -6,11 +6,12 @@ import shutil
 import tempfile
 import zipfile
 from math import acos, ceil, degrees, pi, radians
-from os.path import abspath, dirname, exists, join
+from os.path import abspath, dirname, exists, join, isdir
 from queue import Queue
 from time import perf_counter as Tcounter
 from time import sleep
-from os import stat
+from os import stat, system
+from glob import glob
 
 import bgl
 import blf
@@ -58,6 +59,31 @@ cm_info = {
 }
 clip_offset = 1
 ######################################################################
+def bdental_update():
+    _cmd = "curl -v -L https://github.com/issamdakir/Bdental-3-win/zipball/main"
+    temp_dir = tempfile.mkdtemp()
+    _output = join(temp_dir,'Bdental-3.zip')
+    _counter = 0
+    while _counter <= 3 :
+        _counter += 1
+        print(_counter)
+        system(f"{_cmd} > {_output}")
+        if exists(_output) :
+            print(_counter,"Break -> zip file downloaded : ", _output)
+            break
+    bdental_3 = None 
+    try :
+        with zipfile.ZipFile(_output, 'r') as zip_ref:
+            zip_ref.extractall(temp_dir)
+        # print("tempdir : ", temp_dir)
+
+        src = [e for e in glob(join(temp_dir, "*")) if not e.endswith(".zip")][0]
+        bdental_3 = join(temp_dir,"Bdental-3")
+        os.rename(src, bdental_3)
+    except :
+        pass
+    return bdental_3
+
 def isConnected():
     try:
         sock = socket.create_connection(("www.google.com", 80))

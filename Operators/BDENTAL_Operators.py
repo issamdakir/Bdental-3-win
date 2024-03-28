@@ -7,7 +7,8 @@ from math import radians, pi, sqrt, sin, cos
 import numpy as np
 from time import sleep, perf_counter as tpc
 from queue import Queue
-from os.path import join, dirname, abspath, exists, split, basename
+from os.path import join, dirname, abspath, exists, split, basename, isdir, isfile
+from glob import glob
 
 import gpu
 from gpu_extras.batch import batch_for_shader
@@ -40,6 +41,7 @@ from .BDENTAL_Utils import *
 Addon_Enable(AddonName="mesh_looptools", Enable=True)
 
 addon_dir = dirname(dirname(abspath(__file__)))
+Addon_Version_Path = join(addon_dir, "Resources","BDENTAL_Version.txt")
 DataBlendFile = join(addon_dir, "Resources", "BlendData",
                      "BDENTAL_BlendData.blend")
 
@@ -54,6 +56,7 @@ SLICES_TXT_HANDLER = []
 message_queue = Queue()
 FLY_IMPLANT_INDEX = None
 TELEGRAM_LINK = "https://t.me/bdental_support"
+VERSION_URL = "https://raw.githubusercontent.com/issamdakir/Bdental-3-win/main/Resources/BDENTAL_Version.txt"
 
 #######################################################################################
 # functions :
@@ -216,6 +219,87 @@ def update_slices_txt(remove_handlers=True):
     slices_text_handler = draw_slices_text_2d()
     SLICES_TXT_HANDLER.append(slices_text_handler)
     bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
+class BDENTAL_OT_checkUpdate(bpy.types.Operator):
+    """ check addon update """
+
+    bl_idname = "wm.bdental_checkupdate"
+    bl_label = "check update"
+    bl_options = {"REGISTER", "UNDO"}
+
+    txt = []
+
+    def draw(self, context):
+        
+        layout = self.layout
+        layout.alignment = "EXPAND"
+        # layout.alert = True
+        for t in self.txt :
+            layout.label(text=t)
+
+    def execute(self, context):
+        global addon_dir
+        update_info(message=["Downloading ..."], rect_color=[0.7,0.4,0.2,1])
+        Bdental_3 = bdental_update()
+        if Bdental_3 is not None : 
+            for elmt in os.listdir(addon_dir):
+                if not "bdental_modules" in elmt.lower() :
+                    fullpath = join(addon_dir,elmt)
+                    new_elmt = join(Bdental_3,elmt)
+                    if exists(new_elmt) and not "bdental_modules" in elmt.lower() :
+                        if isfile(fullpath) :
+                            os.remove(fullpath)
+                        else :
+                            shutil.rmtree(fullpath)
+                        shutil.move(new_elmt, addon_dir)
+            update_info(message=["Finished."], rect_color=[0,0.7,0.2,0.7])
+            sleep(1)
+            update_info()
+            t = threading.Thread(
+                target=start_blender_session,
+                args=[],
+                daemon=True,
+                )
+            t.start()
+            sys.exit(0)
+            t.join()
+        else :
+            update_info(message=["Update failled, please retry later."], rect_color=[1,0.0,0.0,0.7])
+            sleep(3)
+            update_info()
+        return{"FINISHED"}
+
+    def invoke(self, context, event):
+        global Addon_Version_Path
+        global VERSION_URL
+        current = 0
+        last = 0
+        with open(Addon_Version_Path, "r") as rf:
+            lines = rf.readlines()
+            current = int(lines[0].split(";")[1])
+        import requests
+        success = 0
+        try :
+            r = requests.get(VERSION_URL)
+            success = r.ok
+        except Exception as er :
+            print(f"request bdental version error : {er}")
+        if not success :
+            update_info(message=["Bdental update : conexion error !"], rect_color=[1,0,0,0.7])
+            sleep(3)
+            update_info()
+            return{"CANCELLED"}
+
+        last = int(r.text.split(";")[-1])
+        if last <= current :
+            update_info(message=["Bdental is up to date."], rect_color=[0,1,0.2,0.7])
+            sleep(3)
+            update_info()
+            return{"CANCELLED"}
+        self.txt = [f"new version availible = {last}", 
+        "Warning : Save current project before you press ok to update",
+        "Blender will restart automatically" ]
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self,width=500)
 
 class BDENTAL_OT_SetConfig(bpy.types.Operator):
     """ set bdental config """
@@ -13002,6 +13086,7 @@ class BDENTAL_OT_PathCutter(bpy.types.Operator):
 # Registration :
 #################################################################################################
 classes = [
+    BDENTAL_OT_checkUpdate,
     BDENTAL_OT_RibbonCutterAdd,
     BDENTAL_OT_RibbonCutter_Perform_Cut,
     BDENTAL_OT_SetConfig,

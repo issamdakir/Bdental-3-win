@@ -45,6 +45,8 @@ class BDENTAL_PT_MainPanel(bpy.types.Panel):
         row = box.row()
         row.alert = True
         row.label(text=f"ver. {Addon_Version_Date}")
+        row = box.row()
+        row.operator("wm.bdental_checkupdate")
         
 
 class BDENTAL_PT_GeneralPanel(bpy.types.Panel):
