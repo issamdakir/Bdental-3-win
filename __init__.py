@@ -376,10 +376,7 @@ if not exists(BDENTAL_MODULES) :
 if not ERROR_PANEL :
     new_modules = join(RESOURCES, "bdental_modules")
     if exists(new_modules) :
-        try :
-            shutil.rmtree(BDENTAL_MODULES)
-        except :
-            pass
+        shutil.rmtree(BDENTAL_MODULES)
         shutil.move(new_modules, ADDON_DIR)
     sys.path.insert(0,BDENTAL_MODULES)
     NotFoundPkgs = ImportReq(REQ_DICT)
