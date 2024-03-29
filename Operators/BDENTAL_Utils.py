@@ -58,7 +58,55 @@ cm_info = {
     2: (0.767, 0.885)
 }
 clip_offset = 1
+github_cmd = "curl -L https://github.com/issamdakir/Bdental-3-win/zipball/main"
 ######################################################################
+def addon_update(_file, addon_dir,blender_path):
+    # sleep(1)
+    bdental_3_old = addon_dir
+    # shutil.rmtree(bdental_3_old)
+    shutil.move(_file, addon_dir,copy_function = shutil.copytree)
+    os.system(f'"{blender_path}"')
+
+def exit_blender():
+    sys.exit(0)
+
+def addon_download():
+    global github_cmd
+    message = []
+    download_is_ok = False
+    _file = None 
+
+    temp_dir = tempfile.mkdtemp()
+    os.chdir(temp_dir)
+    bdental_zip = join(temp_dir,'Bdental-3.zip')
+    _counter = 0
+    while _counter <= 3 :
+        _counter += 1
+        print(_counter)
+        os.system(f"{github_cmd} > {bdental_zip}")
+        if exists(bdental_zip) :
+            download_is_ok = True
+            print(f"number of url curls : {_counter} -> zip file downloaded : ", bdental_zip)
+            break
+    
+    if not download_is_ok :
+        message.extend(["Error : curl bdental.zip download"])
+        return message, _file
+
+    
+    
+    try :
+        with zipfile.ZipFile(bdental_zip, 'r') as zip_ref:
+            zip_ref.extractall(temp_dir)
+    except :
+        message.extend([f"Error : extract downloaded zip file {bdental_zip}"])
+        return message, _file
+    src = [abspath(e) for e in os.listdir(temp_dir) if isdir(abspath(e))][0]
+    _file = join(temp_dir,"Bdental-3")
+    os.rename(src, _file)
+    return message, _file
+
+
 def bdental_update():
     _cmd = "curl -v -L https://github.com/issamdakir/Bdental-3-win/zipball/main"
     temp_dir = tempfile.mkdtemp()

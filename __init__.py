@@ -280,6 +280,7 @@ bl_info = {
 # Python imports :
 
 import sys
+import shutil
 import os
 import bpy
 import zipfile
@@ -373,6 +374,13 @@ if not exists(BDENTAL_MODULES) :
             zip_ref.extractall(ADDON_DIR)
 
 if not ERROR_PANEL :
+    new_modules = join(RESOURCES, "bdental_modules")
+    if exists(new_modules) :
+        try :
+            shutil.rmtree(BDENTAL_MODULES)
+        except :
+            pass
+        shutil.move(new_modules, ADDON_DIR)
     sys.path.insert(0,BDENTAL_MODULES)
     NotFoundPkgs = ImportReq(REQ_DICT)
     if NotFoundPkgs :

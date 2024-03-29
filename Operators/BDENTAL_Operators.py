@@ -105,7 +105,6 @@ def gpu_info_footer(rect_color, text_list, button=False, btn_txt="", pourcentage
 
     return info_handler
 
-
 def get_btn_bb(btn_index=0, btn_width=100, btn_height=26, padding_x=10, padding_y=2, safe_area=5):
     area3d = None
     area3d_check = [
@@ -130,7 +129,6 @@ def get_btn_bb(btn_index=0, btn_width=100, btn_height=26, padding_x=10, padding_
     else:
         return None
 
-
 def draw_gpu_circle(center_2d, radius, segments, color_rgba):
 
     x, y = center_2d
@@ -147,7 +145,6 @@ def draw_gpu_circle(center_2d, radius, segments, color_rgba):
     shader.bind()
     shader.uniform_float("color", color_rgba)
     batch.draw(shader)
-
 
 def draw_gpu_rect(x, y, w, h, rect_color):
 
@@ -167,7 +164,6 @@ def draw_gpu_rect(x, y, w, h, rect_color):
     shader.uniform_float("color", rect_color)
     batch.draw(shader)
 
-
 def update_info(message=[], remove_handlers=True, button=False, btn_txt="", pourcentage=100, redraw_timer=True, rect_color=[0.4, 0.4, 0.8, 1.000000]):
     global DRAW_HANDLERS
 
@@ -181,7 +177,6 @@ def update_info(message=[], remove_handlers=True, button=False, btn_txt="", pour
         DRAW_HANDLERS.append(info_handler)
     if redraw_timer:
         bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
-
 
 def draw_slices_text_2d():
     text_color_rgba = [0.8, 0.6, 0.0, 1.0]
@@ -207,7 +202,6 @@ def draw_slices_text_2d():
     )
     return slices_text_handler
 
-
 def update_slices_txt(remove_handlers=True):
     global SLICES_TXT_HANDLER
 
@@ -219,6 +213,7 @@ def update_slices_txt(remove_handlers=True):
     slices_text_handler = draw_slices_text_2d()
     SLICES_TXT_HANDLER.append(slices_text_handler)
     bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
+
 class BDENTAL_OT_checkUpdate(bpy.types.Operator):
     """ check addon update """
 
@@ -227,52 +222,67 @@ class BDENTAL_OT_checkUpdate(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     txt = []
+    restart = False
 
     def draw(self, context):
         
         layout = self.layout
         layout.alignment = "EXPAND"
-        # layout.alert = True
+        layout.alert = True
         for t in self.txt :
             layout.label(text=t)
+    
+    def addon_update(self, _file, addon_dir,blender_path):
+        for elmt in os.listdir(_file):
+            fullpath = join(addon_dir,elmt)
+            new_elmt = join(_file,elmt)
+            if exists(fullpath) :
+                if isfile(fullpath) :
+                    os.remove(fullpath)
+                    shutil.move(new_elmt, addon_dir)
+                else :
+                    if not "bdental_modules" in elmt.lower() :
+                        shutil.rmtree(fullpath)
+                        shutil.move(new_elmt, addon_dir)
+                    else :
+                        resources = join(addon_dir, "Resources")
+                        shutil.move(new_elmt, resources)
 
+        os.system(f'"{blender_path}"')
+        self.restart = True
+
+    def exit_blender(self):
+        while True :
+            sleep(1)
+            if self.restart :
+                sys.exit(0)
+            
     def execute(self, context):
         global addon_dir
-        update_info(message=["Downloading ..."], rect_color=[0.7,0.4,0.2,1])
-        Bdental_3 = bdental_update()
-        if Bdental_3 is not None : 
-            for elmt in os.listdir(addon_dir):
-                if not "bdental_modules" in elmt.lower() :
-                    fullpath = join(addon_dir,elmt)
-                    new_elmt = join(Bdental_3,elmt)
-                    if exists(new_elmt) and not "bdental_modules" in elmt.lower() :
-                        if isfile(fullpath) :
-                            os.remove(fullpath)
-                        else :
-                            shutil.rmtree(fullpath)
-                        shutil.move(new_elmt, addon_dir)
-            update_info(message=["Finished."], rect_color=[0,0.7,0.2,0.7])
-            sleep(1)
-            update_info()
-            t = threading.Thread(
-                target=start_blender_session,
-                args=[],
+        sys.path.pop(0)
+        blender_path = bpy.app.binary_path
+        t1 = threading.Thread(
+                target=addon_update,
+                args=[self._file, addon_dir, blender_path],
                 daemon=True,
                 )
-            t.start()
-            sys.exit(0)
-            t.join()
-        else :
-            update_info(message=["Update failled, please retry later."], rect_color=[1,0.0,0.0,0.7])
-            sleep(3)
-            update_info()
+        
+        
+        t1.start()
+        self.exit_blender()
+        
         return{"FINISHED"}
 
     def invoke(self, context, event):
+        if not isConnected() :
+            update_info(message=["Bdental update : Please check internet connexion !"], rect_color=[1,0,0,0.7])
+            sleep(3)
+            update_info()
+            return{"CANCELLED"}
+
         global Addon_Version_Path
         global VERSION_URL
-        current = 0
-        last = 0
+        
         with open(Addon_Version_Path, "r") as rf:
             lines = rf.readlines()
             current = int(lines[0].split(";")[1])
@@ -282,22 +292,36 @@ class BDENTAL_OT_checkUpdate(bpy.types.Operator):
             r = requests.get(VERSION_URL)
             success = r.ok
         except Exception as er :
-            print(f"request bdental version error : {er}")
+            print(f"request github bdental version error : {er}")
         if not success :
-            update_info(message=["Bdental update : conexion error !"], rect_color=[1,0,0,0.7])
+            update_info(message=["Bdental update : server conexion error !"], rect_color=[1,0,0,0.7])
             sleep(3)
             update_info()
             return{"CANCELLED"}
 
-        last = int(r.text.split(";")[-1])
-        if last <= current :
+        last_txt, last_num_txt = r.text.split(";")
+        last_num = int(last_num_txt)
+        if last_num <= current :
             update_info(message=["Bdental is up to date."], rect_color=[0,1,0.2,0.7])
             sleep(3)
             update_info()
             return{"CANCELLED"}
-        self.txt = [f"new version availible = {last}", 
-        "Warning : Save current project before you press ok to update",
+
+        update_info(message=[f"new version availible = {last_txt}","Downloading ..."], rect_color=[0.7,0.4,0.2,1])
+        self.message, self._file = addon_download()
+        if self.message :
+            update_info(message=self.message, rect_color=[1,0,0,0.7])
+            sleep(3)
+            update_info()
+            return{"CANCELLED"}
+
+        update_info()
+        self.txt = [
+        "Warning :",
+        "Ready for update !",
+        "press ok to update",
         "Blender will restart automatically" ]
+
         wm = context.window_manager
         return wm.invoke_props_dialog(self,width=500)
 
