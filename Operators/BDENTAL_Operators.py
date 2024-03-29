@@ -214,6 +214,34 @@ def update_slices_txt(remove_handlers=True):
     SLICES_TXT_HANDLER.append(slices_text_handler)
     bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
 
+def addon_update(_dir, addon_dir,blender_path):
+    global RESTART  
+    for elmt in os.listdir(_dir):
+        fullpath = join(addon_dir,elmt)
+        new_elmt = join(_dir,elmt)
+        if exists(fullpath) :
+            if isfile(fullpath) :
+                os.remove(fullpath)
+                shutil.move(new_elmt, addon_dir)
+            else :
+                if not "bdental_modules" in elmt.lower() :
+                    shutil.rmtree(fullpath)
+                    shutil.move(new_elmt, addon_dir)
+                else :
+                    resources = join(addon_dir, "Resources")
+                    shutil.move(new_elmt, resources)
+
+        os.system(f'"{blender_path}"')
+        RESTART = 1
+
+def exit_blender():
+    
+    while True :
+        global RESTART  
+        sleep(1)
+        print(f"restart : {RESTART}")
+        if RESTART :
+            sys.exit(0)
 class BDENTAL_OT_checkUpdate(bpy.types.Operator):
     """ check addon update """
 
@@ -231,45 +259,20 @@ class BDENTAL_OT_checkUpdate(bpy.types.Operator):
         for t in self.txt :
             layout.label(text=t)
     
-    def addon_update(self, _dir, addon_dir,blender_path):
-        
-        for elmt in os.listdir(_dir):
-            fullpath = join(addon_dir,elmt)
-            new_elmt = join(_dir,elmt)
-            if exists(fullpath) :
-                if isfile(fullpath) :
-                    os.remove(fullpath)
-                    shutil.move(new_elmt, addon_dir)
-                else :
-                    if not "bdental_modules" in elmt.lower() :
-                        shutil.rmtree(fullpath)
-                        shutil.move(new_elmt, addon_dir)
-                    else :
-                        resources = join(addon_dir, "Resources")
-                        shutil.move(new_elmt, resources)
-
-        os.system(f'"{blender_path}"')
-        self.restart = 1
-
-    def exit_blender(self):
-        while True :
-            sleep(1)
-            print(f"restart : {self.restart}")
-            if self.restart :
-                sys.exit(0)
+    
             
     def execute(self, context):
         global addon_dir
         blender_path = bpy.app.binary_path
         t1 = threading.Thread(
-                target=self.addon_update,
+                target=addon_update,
                 args=[self._dir, addon_dir, blender_path],
                 daemon=True,
                 )
         
         
         t1.start()
-        self.exit_blender()
+        exit_blender()
         
         return{"FINISHED"}
 
