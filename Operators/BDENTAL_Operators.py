@@ -222,7 +222,6 @@ class BDENTAL_OT_checkUpdate(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     txt = []
-    restart = False
 
     def draw(self, context):
         
@@ -265,7 +264,7 @@ class BDENTAL_OT_checkUpdate(bpy.types.Operator):
         blender_path = bpy.app.binary_path
         t1 = threading.Thread(
                 target=self.addon_update,
-                args=[self._file, addon_dir, blender_path],
+                args=[self._dir, addon_dir, blender_path],
                 daemon=True,
                 )
         
