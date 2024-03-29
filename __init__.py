@@ -382,7 +382,7 @@ if not ERROR_PANEL :
     NotFoundPkgs = ImportReq(REQ_DICT)
     if NotFoundPkgs :
         ERROR_PANEL = True
-        ERROR_MESSAGE.append([
+        ERROR_MESSAGE.extend([
             "Bdental Modules are not installed properly",
             "Please contact support",
         ])
