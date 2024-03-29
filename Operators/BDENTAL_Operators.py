@@ -214,8 +214,8 @@ def update_slices_txt(remove_handlers=True):
     SLICES_TXT_HANDLER.append(slices_text_handler)
     bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
 
-def addon_update(_dir, addon_dir,blender_path):
-    global RESTART  
+def addon_update(_dir, addon_dir):
+     
     for elmt in os.listdir(_dir):
         fullpath = join(addon_dir,elmt)
         new_elmt = join(_dir,elmt)
@@ -231,8 +231,8 @@ def addon_update(_dir, addon_dir,blender_path):
                     resources = join(addon_dir, "Resources")
                     shutil.move(new_elmt, resources)
 
-        os.system(f'"{blender_path}"')
-        RESTART = 1
+        
+       
 
 def exit_blender():
     
@@ -263,14 +263,14 @@ class BDENTAL_OT_checkUpdate(bpy.types.Operator):
             
     def execute(self, context):
         global addon_dir
-        blender_path = bpy.app.binary_path
+        
         t1 = threading.Thread(
-                target=addon_update,
-                args=[self._dir, addon_dir, blender_path],
+                target=start_blender_session,
+                args=[],
                 daemon=True,
                 )
         
-        
+        addon_update(self._dir, addon_dir)
         t1.start()
         exit_blender()
         

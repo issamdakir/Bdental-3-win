@@ -288,6 +288,7 @@ import socket
 import webbrowser
 from importlib import import_module
 from os.path import dirname, join, abspath, expanduser,exists
+from time import sleep
 if sys.platform == "win32":
     sys.stdout.reconfigure(
         encoding="cp65001"
@@ -376,6 +377,7 @@ if not exists(BDENTAL_MODULES) :
 if not ERROR_PANEL :
     new_modules = join(RESOURCES, "bdental_modules")
     if exists(new_modules) :
+        sleep(3)
         shutil.rmtree(BDENTAL_MODULES)
         shutil.move(new_modules, ADDON_DIR)
     sys.path.insert(0,BDENTAL_MODULES)
