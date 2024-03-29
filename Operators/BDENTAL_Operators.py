@@ -239,14 +239,15 @@ class BDENTAL_OT_checkUpdate(bpy.types.Operator):
             if exists(fullpath) :
                 if isfile(fullpath) :
                     os.remove(fullpath)
-                    shutil.move(new_elmt, addon_dir)
+                    shutil.move(new_elmt, fullpath)
                 else :
                     if not "bdental_modules" in elmt.lower() :
                         shutil.rmtree(fullpath)
-                        shutil.move(new_elmt, addon_dir)
+                        shutil.move(new_elmt, fullpath)
                     else :
                         resources = join(addon_dir, "Resources")
-                        shutil.move(new_elmt, resources)
+                        fullpath = join(resources,elmt)
+                        shutil.move(new_elmt, fullpath)
 
         os.system(f'"{blender_path}"')
         self.restart = True
