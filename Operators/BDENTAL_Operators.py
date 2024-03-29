@@ -235,13 +235,8 @@ def addon_update(_dir, addon_dir):
        
 
 def exit_blender():
+    sys.exit(0)
     
-    while True :
-        global RESTART  
-        sleep(1)
-        print(f"restart : {RESTART}")
-        if RESTART :
-            sys.exit(0)
 class BDENTAL_OT_checkUpdate(bpy.types.Operator):
     """ check addon update """
 
