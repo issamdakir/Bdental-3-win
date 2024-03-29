@@ -57,7 +57,7 @@ message_queue = Queue()
 FLY_IMPLANT_INDEX = None
 TELEGRAM_LINK = "https://t.me/bdental_support"
 VERSION_URL = "https://raw.githubusercontent.com/issamdakir/Bdental-3-win/main/Resources/BDENTAL_Version.txt"
-
+RESTART = False
 #######################################################################################
 # functions :
 
@@ -232,30 +232,31 @@ class BDENTAL_OT_checkUpdate(bpy.types.Operator):
         for t in self.txt :
             layout.label(text=t)
     
-    def addon_update(self, _file, addon_dir,blender_path):
-        for elmt in os.listdir(_file):
+    def addon_update(self, _dir, addon_dir,blender_path):
+        global RESTART
+        for elmt in os.listdir(_dir):
             fullpath = join(addon_dir,elmt)
-            new_elmt = join(_file,elmt)
+            new_elmt = join(_dir,elmt)
             if exists(fullpath) :
                 if isfile(fullpath) :
                     os.remove(fullpath)
-                    shutil.move(new_elmt, fullpath)
+                    shutil.move(new_elmt, addon_dir)
                 else :
                     if not "bdental_modules" in elmt.lower() :
                         shutil.rmtree(fullpath)
-                        shutil.move(new_elmt, fullpath)
+                        shutil.move(new_elmt, addon_dir)
                     else :
                         resources = join(addon_dir, "Resources")
-                        fullpath = join(resources,elmt)
-                        shutil.move(new_elmt, fullpath)
+                        shutil.move(new_elmt, resources)
 
         os.system(f'"{blender_path}"')
-        self.restart = True
+        RESTART = True
 
     def exit_blender(self):
+        global RESTART
         while True :
             sleep(1)
-            if self.restart :
+            if RESTART :
                 sys.exit(0)
             
     def execute(self, context):
@@ -263,7 +264,7 @@ class BDENTAL_OT_checkUpdate(bpy.types.Operator):
         sys.path.pop(0)
         blender_path = bpy.app.binary_path
         t1 = threading.Thread(
-                target=addon_update,
+                target=self.addon_update,
                 args=[self._file, addon_dir, blender_path],
                 daemon=True,
                 )
@@ -309,7 +310,7 @@ class BDENTAL_OT_checkUpdate(bpy.types.Operator):
             return{"CANCELLED"}
 
         update_info(message=[f"new version availible = {last_txt}","Downloading ..."], rect_color=[0.7,0.4,0.2,1])
-        self.message, self._file = addon_download()
+        self.message, self._dir = addon_download()
         if self.message :
             update_info(message=self.message, rect_color=[1,0,0,0.7])
             sleep(3)
