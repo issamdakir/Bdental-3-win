@@ -260,11 +260,10 @@ class BDENTAL_OT_checkUpdate(bpy.types.Operator):
             
     def execute(self, context):
         global addon_dir
-        sys.path.pop(0)
         blender_path = bpy.app.binary_path
         t1 = threading.Thread(
                 target=self.addon_update,
-                args=[self, self._dir, addon_dir, blender_path],
+                args=[self._dir, addon_dir, blender_path],
                 daemon=True,
                 )
         
@@ -283,7 +282,8 @@ class BDENTAL_OT_checkUpdate(bpy.types.Operator):
 
         global Addon_Version_Path
         global VERSION_URL
-        
+        update_info(message=["Server connect..."], rect_color=[0.7,0.4,0.2,1])
+
         with open(Addon_Version_Path, "r") as rf:
             lines = rf.readlines()
             current = int(lines[0].split(";")[1])
@@ -308,7 +308,7 @@ class BDENTAL_OT_checkUpdate(bpy.types.Operator):
             update_info()
             return{"CANCELLED"}
 
-        update_info(message=[f"new version availible = {last_txt}","Downloading ..."], rect_color=[0.7,0.4,0.2,1])
+        update_info(message=[f"new version availible ({last_txt}) Downloading ..."], rect_color=[0.7,0.4,0.2,1])
         self.message, self._dir = addon_download()
         if self.message :
             update_info(message=self.message, rect_color=[1,0,0,0.7])
@@ -316,12 +316,14 @@ class BDENTAL_OT_checkUpdate(bpy.types.Operator):
             update_info()
             return{"CANCELLED"}
 
-        update_info()
+        update_info(message=["Ready for update !"],rect_color=[0.2,1,0.2,1])
         self.txt = [
-        "Warning :",
-        "Ready for update !",
-        "press ok to update",
-        "Blender will restart automatically" ]
+        "",
+        "",
+        "press OK to confirm",
+        "Blender will restart automatically",
+        "",
+        "", ]
 
         wm = context.window_manager
         return wm.invoke_props_dialog(self,width=500)
