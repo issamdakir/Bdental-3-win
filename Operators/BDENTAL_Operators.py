@@ -222,7 +222,7 @@ class BDENTAL_OT_checkUpdate(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     txt = []
-
+    restart = 0
     def draw(self, context):
         
         layout = self.layout
@@ -232,7 +232,7 @@ class BDENTAL_OT_checkUpdate(bpy.types.Operator):
             layout.label(text=t)
     
     def addon_update(self, _dir, addon_dir,blender_path):
-        global RESTART
+        
         for elmt in os.listdir(_dir):
             fullpath = join(addon_dir,elmt)
             new_elmt = join(_dir,elmt)
@@ -249,13 +249,13 @@ class BDENTAL_OT_checkUpdate(bpy.types.Operator):
                         shutil.move(new_elmt, resources)
 
         os.system(f'"{blender_path}"')
-        RESTART = True
+        self.restart = 1
 
     def exit_blender(self):
-        global RESTART
         while True :
             sleep(1)
-            if RESTART :
+            print(f"restart : {self.restart}")
+            if self.restart :
                 sys.exit(0)
             
     def execute(self, context):
@@ -264,7 +264,7 @@ class BDENTAL_OT_checkUpdate(bpy.types.Operator):
         blender_path = bpy.app.binary_path
         t1 = threading.Thread(
                 target=self.addon_update,
-                args=[self._dir, addon_dir, blender_path],
+                args=[self, self._dir, addon_dir, blender_path],
                 daemon=True,
                 )
         
