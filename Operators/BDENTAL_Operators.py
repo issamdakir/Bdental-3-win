@@ -3490,21 +3490,58 @@ class BDENTAL_OT_AddImplant(bpy.types.Operator):
                                   step=1, precision=3, unit='LENGTH', description="Implant Lenght")
     tooth_number: IntProperty(
         name="Tooth Number", default=11, min=11, max=48, description="Tooth Number")
+    
+    safe_zone : BoolProperty(name="Add Safe Zone",default=False)
+    
     safe_zone_thikness: FloatProperty(name="Safe Zone Thikness", default=1.5, min=0.0,
                                       max=5.0, step=1, precision=3, unit='LENGTH', description="Safe Zone Thikness")
+    sleeve : BoolProperty(name="Add Sleeve",default=False)
+    
     sleeve_diameter: FloatProperty(name="Sleeve Diameter", default=8.0, min=0.0,
                                    max=20.0, step=1, precision=3, unit='LENGTH', description="Sleeve Diameter")
-    sleeve_height: FloatProperty(name="Sleeve Height", default=10.0, min=0.0,
-                                 max=20.0, step=1, precision=3, unit='LENGTH', description="Sleeve Height")
+    sleeve_height: FloatProperty(name="Sleeve Height", default=10.0, min=0.0,max=20.0, step=1, precision=3, unit='LENGTH', description="Sleeve Height")
+    
+    pin : BoolProperty(name="Add Sleeve",default=False)
+    
     pin_diameter: FloatProperty(name="Pin Diameter", default=2.0, min=0.0,
                                 max=20.0, step=1, precision=3, unit='LENGTH', description="Pin Diameter")
-    offset: FloatProperty(name="Offset", default=0.1, min=0.0, max=1.0,
+    offset: FloatProperty(name="Pin Offset", default=0.1, min=0.0, max=1.0,
                           step=1, precision=3, unit='LENGTH', description="Offset")
 
     @classmethod
     def poll(cls, context):
         return context.object and context.object.select_get() and context.object.get("bdental_type") == "slices_pointer"
         # return [obj for obj in context.scene.objects if "_SLICES_POINTER" in obj.name]
+    
+    def draw(self, context):
+        layout = self.layout
+        box = layout.box()
+        box.alignment = "EXPAND"
+        row = box.row()
+        row.prop(self, "tooth_number")
+        row = box.row()
+        row.prop(self, "implant_diameter")
+        row = box.row()
+        row.prop(self, "implant_lenght")
+
+        row = box.row()
+        row.prop(self, "safe_zone")
+        if self.safe_zone :
+            row.prop(self, "safe_zone_thikness")
+        
+        row = box.row()
+        row.prop(self, "sleeve")
+        if self.sleeve :
+            row.prop(self, "sleeve_diameter")
+            row.prop(self, "sleeve_height")
+        
+        row = box.row()
+        row.prop(self, "pin")
+        if self.pin :
+            row.prop(self, "pin_diameter")
+            row.prop(self, "offset")
+
+
 
     def execute(self, context):
 
@@ -3520,8 +3557,7 @@ class BDENTAL_OT_AddImplant(bpy.types.Operator):
         implant_type = "up" if self.tooth_number < 31 else "low"
         implants_coll = add_collection("Bdental Implants")
         guide_components_coll = add_collection("GUIDE Components")
-        safe_zones_coll = add_collection(
-            "Safe Zones", parent_collection=implants_coll)
+        
 
         coll = AppendCollection("implant", parent_coll_name=implants_coll.name)
 
@@ -3536,54 +3572,78 @@ class BDENTAL_OT_AddImplant(bpy.types.Operator):
             (self.implant_diameter, self.implant_diameter, self.implant_lenght))
         implant["bdental_type"] = "bdental_implant"
         implant["bdental_remove_code"] = self.tooth_number
+        MoveToCollection(implant, implants_coll.name)
 
-        sleeve.name = f"_ADD_SLEEVE({self.tooth_number})"
-        sleeve.dimensions = Vector(
-            (self.sleeve_diameter, self.sleeve_diameter, self.sleeve_height))
-        sleeve["bdental_type"] = "bdental_implant_sleeve"
-        sleeve["bdental_remove_code"] = self.tooth_number
+        if self.safe_zone :
+            safe_zone.name = f"SAFE_ZONE({self.tooth_number})"
+            safe_zone.dimensions = implant.dimensions + \
+                Vector((self.safe_zone_thikness*2,
+                    self.safe_zone_thikness*2, self.safe_zone_thikness))
+            safe_zone["bdental_type"] = "bdental_implant_safe_zone"
+            safe_zone["bdental_remove_code"] = self.tooth_number
+            safe_zones_coll = add_collection(
+            "Safe Zones", parent_collection=implants_coll)
+            MoveToCollection(safe_zone, safe_zones_coll.name)
+        else :
+            bpy.data.objects.remove(safe_zone)
+            safe_zone = None
 
-        safe_zone.name = f"SAFE_ZONE({self.tooth_number})"
-        safe_zone.dimensions = implant.dimensions + \
-            Vector((self.safe_zone_thikness*2,
-                   self.safe_zone_thikness*2, self.safe_zone_thikness))
-        safe_zone["bdental_type"] = "bdental_implant_safe_zone"
-        safe_zone["bdental_remove_code"] = self.tooth_number
+        if self.sleeve :
+            sleeve.name = f"_ADD_SLEEVE({self.tooth_number})"
+            sleeve.dimensions = Vector(
+                (self.sleeve_diameter, self.sleeve_diameter, self.sleeve_height))
+            sleeve["bdental_type"] = "bdental_implant_sleeve"
+            sleeve["bdental_remove_code"] = self.tooth_number
+            MoveToCollection(sleeve, guide_components_coll.name)
+        else :
+            bpy.data.objects.remove(sleeve)
+            sleeve = None
 
-        pin.name = f"PIN({self.tooth_number})"
-        pin.dimensions = Vector((self.pin_diameter+(2*self.offset),
-                                self.pin_diameter+(2*self.offset), pin.dimensions[2]))
-        pin["bdental_type"] = "bdental_implant_pin"
-        pin["bdental_remove_code"] = self.tooth_number
+        
+        if self.pin :
+            pin.name = f"PIN({self.tooth_number})"
+            pin.dimensions = Vector((self.pin_diameter+(2*self.offset),
+                                    self.pin_diameter+(2*self.offset), pin.dimensions[2]))
+            pin["bdental_type"] = "bdental_implant_pin"
+            pin["bdental_remove_code"] = self.tooth_number
+            MoveToCollection(pin, guide_components_coll.name)
+        else :
+            bpy.data.objects.remove(pin)
+            pin = None
 
         for obj in [implant, sleeve, safe_zone, pin]:
-            bpy.ops.object.select_all(action="DESELECT")
-            obj.select_set(True)
-            context.view_layer.objects.active = obj
-            bpy.ops.object.transform_apply(
-                location=False, rotation=False, scale=True)
-
-        if implant_type == "up":
-            for obj in [implant, sleeve, safe_zone, pin]:
-                obj.rotation_euler.rotate_axis("X", radians(180))
+            if obj is not None :
                 bpy.ops.object.select_all(action="DESELECT")
                 obj.select_set(True)
                 context.view_layer.objects.active = obj
                 bpy.ops.object.transform_apply(
-                    location=False, rotation=True, scale=False)
+                    location=False, rotation=False, scale=True)
+
+        if implant_type == "up":
+            for obj in [implant, sleeve, safe_zone, pin]:
+                if obj is not None :
+                    obj.rotation_euler.rotate_axis("X", radians(180))
+                    bpy.ops.object.select_all(action="DESELECT")
+                    obj.select_set(True)
+                    context.view_layer.objects.active = obj
+                    bpy.ops.object.transform_apply(
+                        location=False, rotation=True, scale=False)
 
         for obj in [implant, sleeve, safe_zone, pin]:
-            obj.matrix_world = self.pointer.matrix_world @ obj.matrix_world
+            if obj is not None :
+                obj.matrix_world = self.pointer.matrix_world @ obj.matrix_world
 
         for obj in [sleeve, pin]:
-            child_of = obj.constraints.new("CHILD_OF")
-            child_of.target = implant
-            child_of.use_scale_x = False
-            child_of.use_scale_y = False
-            child_of.use_scale_z = False
+            if obj is not None :
+                child_of = obj.constraints.new("CHILD_OF")
+                child_of.target = implant
+                child_of.use_scale_x = False
+                child_of.use_scale_y = False
+                child_of.use_scale_z = False
 
-        child_of = safe_zone.constraints.new("CHILD_OF")
-        child_of.target = implant
+        if safe_zone is not None :
+            child_of = safe_zone.constraints.new("CHILD_OF")
+            child_of.target = implant
 
         bpy.ops.object.select_all(action="DESELECT")
         implant.select_set(True)
@@ -3592,12 +3652,6 @@ class BDENTAL_OT_AddImplant(bpy.types.Operator):
         bpy.ops.object.select_all(action="DESELECT")
         self.pointer.select_set(True)
         context.view_layer.objects.active = self.pointer
-
-        for obj in [sleeve, pin]:
-            MoveToCollection(obj, guide_components_coll.name)
-
-        MoveToCollection(implant, implants_coll.name)
-        MoveToCollection(safe_zone, safe_zones_coll.name)
 
         bpy.data.collections.remove(coll)
 
@@ -3651,7 +3705,6 @@ class BDENTAL_OT_AddImplant(bpy.types.Operator):
         # return {"FINISHED"}
 
     def invoke(self, context, event):
-        BDENTAL_Props = bpy.context.scene.BDENTAL_Props
         self.pointer = context.object
         wm = context.window_manager
         return wm.invoke_props_dialog(self)
@@ -5578,7 +5631,7 @@ class BDENTAL_OT_guide_3d_text(bpy.types.Operator):
     bl_idname = "wm.bdental_guide_3d_text"
     text_color = [0.0, 0.0, 1.0, 1.0]
     font_size = 4
-    add: bpy.props.BoolProperty(default=True)
+    add: BoolProperty(default=True)
 
     def invoke(self, context, event):
         if not context.object or not context.object.select_get() or not context.object.type == "MESH":
@@ -12727,12 +12780,14 @@ class BDENTAL_OT_SlicesPointerSelect(bpy.types.Operator):
         return False
 
     def execute(self, context):
+        Override, area3D, space3D = CtxOverride(context)
+        
         checklist = [
             obj for obj in bpy.data.objects if obj.get("bdental_type")=="slices_pointer"]
         obj = checklist[0]
         context.view_layer.objects.active = obj
-        bpy.ops.object.mode_set(mode='OBJECT')
-        bpy.ops.object.select_all(action='DESELECT')
+        bpy.ops.object.mode_set(Override,mode='OBJECT')
+        bpy.ops.object.select_all(Override,action='DESELECT')
         obj.select_set(True)
         return{"FINISHED"}
 
