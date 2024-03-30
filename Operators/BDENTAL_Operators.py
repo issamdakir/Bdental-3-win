@@ -3493,17 +3493,17 @@ class BDENTAL_OT_AddImplant(bpy.types.Operator):
     
     safe_zone : BoolProperty(name="Add Safe Zone",default=False)
     
-    safe_zone_thikness: FloatProperty(name="Safe Zone Thikness", default=1.5, min=0.0,
+    safe_zone_thikness: FloatProperty(name="Thikness", default=1.5, min=0.0,
                                       max=5.0, step=1, precision=3, unit='LENGTH', description="Safe Zone Thikness")
     sleeve : BoolProperty(name="Add Sleeve",default=False)
     
-    sleeve_diameter: FloatProperty(name="Sleeve Diameter", default=8.0, min=0.0,
+    sleeve_diameter: FloatProperty(name="Diameter", default=8.0, min=0.0,
                                    max=20.0, step=1, precision=3, unit='LENGTH', description="Sleeve Diameter")
-    sleeve_height: FloatProperty(name="Sleeve Height", default=10.0, min=0.0,max=20.0, step=1, precision=3, unit='LENGTH', description="Sleeve Height")
+    sleeve_height: FloatProperty(name="Height", default=10.0, min=0.0,max=20.0, step=1, precision=3, unit='LENGTH', description="Sleeve Height")
     
-    pin : BoolProperty(name="Add Sleeve",default=False)
+    pin : BoolProperty(name="Add Pin",default=False)
     
-    pin_diameter: FloatProperty(name="Pin Diameter", default=2.0, min=0.0,
+    pin_diameter: FloatProperty(name="Diameter", default=2.0, min=0.0,
                                 max=20.0, step=1, precision=3, unit='LENGTH', description="Pin Diameter")
     offset: FloatProperty(name="Pin Offset", default=0.1, min=0.0, max=1.0,
                           step=1, precision=3, unit='LENGTH', description="Offset")
@@ -3707,7 +3707,7 @@ class BDENTAL_OT_AddImplant(bpy.types.Operator):
     def invoke(self, context, event):
         self.pointer = context.object
         wm = context.window_manager
-        return wm.invoke_props_dialog(self)
+        return wm.invoke_props_dialog(self, width=500)
 
 class BDENTAL_OT_RemoveImplant(bpy.types.Operator):
     """Remove Implant and linked components"""
