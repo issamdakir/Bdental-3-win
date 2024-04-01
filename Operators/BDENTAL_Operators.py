@@ -1852,30 +1852,24 @@ def Load_3DImage_function(context, q, voxel_mode):
     BDENTAL_Props = context.scene.BDENTAL_Props
     UserProjectDir = AbsPath(BDENTAL_Props.UserProjectDir)
     UserImageFile = AbsPath(BDENTAL_Props.UserImageFile)
-    ProjectName = BDENTAL_Props.ProjectNameProp
 
-    # # Save Blend File :
-    # BlendFile = f"{ProjectName}.blend"
-    # Blendpath = join(UserProjectDir, BlendFile)
-
-    # bpy.ops.wm.save_as_mainfile(filepath=Blendpath)
     bpy.ops.wm.save_mainfile()
 
-    BDENTAL_Props.UserProjectDir = RelPath(UserProjectDir)
+    # BDENTAL_Props.UserProjectDir = RelPath(UserProjectDir)
 
     reader = sitk.ImageFileReader()
 
     try:
         Image3D = sitk.ReadImage(UserImageFile)
     except Exception:
-        message = [f"Can't open dicom file : {UserImageFile} "]
+        message = [f"Invalid image format : {UserImageFile} "]
         return DcmInfo, message
 
     Depth = Image3D.GetDepth()
 
     if Depth <= 1:
         message = [
-            "Can't Build 3D Volume from single 2D Image !",
+            "Selected file is not a 3D Image !",
         ]
         return DcmInfo, message
 
@@ -1889,9 +1883,10 @@ def Load_3DImage_function(context, q, voxel_mode):
     ]:
         HU_Image = True
 
-    if not BDENTAL_nrrd or not HU_Image:
+    if not BDENTAL_nrrd and not HU_Image:
+        # print({"bdental image": BDENTAL_nrrd, "valid 3d image": HU_Image})
         message = [
-            "Only Images with Hunsfield data or BDENTAL nrrd images are supported !"
+            f"Invalid image format : {UserImageFile}"
         ]
         return DcmInfo, message
     ###########################################################################################################
@@ -2099,10 +2094,7 @@ def Load_3DImage_function(context, q, voxel_mode):
         for t in threads:
             t.start()
 
-        for t in threads:
-            t.join()
-
-        shutil.rmtree(PngDir)
+        
 
         # Set DcmInfo :
         DcmInfo = dict(
@@ -2133,6 +2125,11 @@ def Load_3DImage_function(context, q, voxel_mode):
         DcmInfoDict = eval(BDENTAL_Props.DcmInfo)
         DcmInfoDict[Preffix] = DcmInfo
         BDENTAL_Props.DcmInfo = str(DcmInfoDict)
+
+        for t in threads:
+            t.join()
+
+        shutil.rmtree(PngDir)
 
         return DcmInfo, message
 
@@ -2237,23 +2234,22 @@ class BDENTAL_OT_Volume_Render(bpy.types.Operator):
             BDENTAL_Props.TeethBool = True
 
             BDENTAL_Props.CT_Rendered = True
-            # bpy.ops.view3d.view_selected(use_all_regions=False)
-
+            
+            sleep(3) # for shaders to load
+            txt = ["Scan loaded. "]
+            update_info(message=txt, rect_color=[0,1,0,0.7])
+            sleep(2)
+            
             
             if self.slices :
-                sleep(2)
-                update_info()
                 message = ["Scan Slices processing ..."]
                 update_info(message)
 
                 bpy.ops.wm.bdental_addslices()
 
-            txt = ["Scan loaded. "]
-            update_info(message=txt, rect_color=[0,1,0,0.7])
-            sleep(1)
-            update_info()
+            
             # os.system("cls")
-
+            update_info()
             Finish = tpc()
             print(f"Voxel rendered (Time : {Finish-Start}")
             bpy.ops.wm.save_mainfile()
@@ -3584,6 +3580,9 @@ class BDENTAL_OT_AddImplant(bpy.types.Operator):
             safe_zones_coll = add_collection(
             "Safe Zones", parent_collection=implants_coll)
             MoveToCollection(safe_zone, safe_zones_coll.name)
+            safe_zone.lock_location = (True, True, True)
+            safe_zone.lock_rotation = (True, True, True)
+            safe_zone.lock_scale = (True, True, True)
         else :
             bpy.data.objects.remove(safe_zone)
             safe_zone = None
@@ -3595,6 +3594,9 @@ class BDENTAL_OT_AddImplant(bpy.types.Operator):
             sleeve["bdental_type"] = "bdental_implant_sleeve"
             sleeve["bdental_remove_code"] = self.tooth_number
             MoveToCollection(sleeve, guide_components_coll.name)
+            sleeve.lock_location = (True, True, True)
+            sleeve.lock_rotation = (True, True, True)
+            sleeve.lock_scale = (True, True, True)
         else :
             bpy.data.objects.remove(sleeve)
             sleeve = None
@@ -3607,6 +3609,9 @@ class BDENTAL_OT_AddImplant(bpy.types.Operator):
             pin["bdental_type"] = "bdental_implant_pin"
             pin["bdental_remove_code"] = self.tooth_number
             MoveToCollection(pin, guide_components_coll.name)
+            pin.lock_location = (True, True, True)
+            pin.lock_rotation = (True, True, True)
+            pin.lock_scale = (True, True, True)
         else :
             bpy.data.objects.remove(pin)
             pin = None
@@ -5271,227 +5276,6 @@ class BDENTAL_OT_GuideFinalise(bpy.types.Operator):
         update_info()
         return {"FINISHED"}
 
-        # for name in guide_cutters_names :
-        #     obj = bpy.data.objects.get(name)
-        #     if obj :
-        #         context.view_layer.objects.active = obj
-        #         bpy.ops.object.mode_set(mode="OBJECT")
-        #         bpy.ops.object.select_all(action='DESELECT')
-        #         obj.select_set(True)
-        #         bpy.ops.object.duplicate_move()
-        #         bpy.ops.object.convert(target='MESH', keep_original=False)
-        #         guide_cutters.append(obj)
-        # splint = context.object
-        # bool_model = context.scene.BDENTAL_Props.splint_target_model
-        # sleeves_checklist = [obj for obj in bpy.data.objects if obj.get("bdental_type") and "bdental_sleeve" in obj.get("bdental_type")]
-        # pins_checklist = [obj for obj in bpy.data.objects if obj.get("bdental_type") and "bdental_pin" in obj.get("bdental_type")]
-        # message = []
-        # if not bool_model :
-        #     message.extend(["Operation Cancelled !","Can't find Passive Blocked Model"])
-        # if not sleeves_checklist :
-        #     message.extend([", Sleeves"])
-        # if not pins_checklist :
-        #     message.extend([", Pins"])
-        # if message :
-        #     update_info(message)
-        #     sleep(3)
-        #     update_info()
-        #     return {"CANCELLED"}
-
-        # message = ["Guide Processing -> Prepare Blocked model..."]
-        # update_info(message)
-
-        # bpy.ops.object.mode_set(mode="OBJECT")
-        # bool_model.hide_set(False)
-        # bool_model.hide_viewport = False
-        # bpy.ops.object.select_all(action="DESELECT")
-        # bool_model.select_set(True)
-        # context.view_layer.objects.active = bool_model
-        # bpy.ops.object.duplicate_move()
-        # bool_model_duplicate = context.object
-
-        # displace_modif = bool_model_duplicate.modifiers.new(name="Displace", type="DISPLACE")
-        # displace_modif.strength = context.scene.BDENTAL_Props.splint_offset
-        # displace_modif.mid_level = 0
-
-        # # remesh = bool_model_duplicate.modifiers.new(name="Remesh", type="REMESH")
-        # bpy.ops.object.convert(target='MESH', keep_original=False)
-
-        # message = ["Guide Processing -> Combine sleeves..."]
-        # update_info(message)
-
-        # splint.hide_set(False)
-        # splint.hide_viewport = False
-        # context.view_layer.objects.active = splint
-        # bpy.ops.object.mode_set(mode="OBJECT")
-
-        # for sleeve in sleeves_checklist :
-        #     sleeve.hide_set(False)
-        #     sleeve.hide_viewport = False
-        #     bpy.ops.object.select_all(action="DESELECT")
-        #     sleeve.select_set(True)
-        #     context.view_layer.objects.active = sleeve
-        #     for constraint in sleeve.constraints :
-        #         bpy.ops.constraint.apply(constraint="Child Of", owner='OBJECT')
-
-        # bpy.ops.object.select_all(action="DESELECT")
-        # splint.select_set(True)
-        # context.view_layer.objects.active = splint
-        # for sleeve in sleeves_checklist :
-        #     sleeve.select_set(True)
-
-        # bpy.ops.object.join()
-        # joined_splint = context.object
-        # remesh = joined_splint.modifiers.new(name="Remesh", type="REMESH")
-
-        # bpy.ops.object.convert(target='MESH', keep_original=False)
-
-        # bpy.ops.object.select_all(action="DESELECT")
-
-        # for pin in pins_checklist :
-        #     pin.hide_set(False)
-        #     pin.hide_viewport = False
-        #     bpy.ops.object.select_all(action="DESELECT")
-        #     pin.select_set(True)
-        #     context.view_layer.objects.active = pin
-        #     for constraint in pin.constraints :
-        #         bpy.ops.constraint.apply(constraint="Child Of", owner='OBJECT')
-        # bpy.ops.object.select_all(action="DESELECT")
-        # for pin in pins_checklist :
-        #     pin.select_set(True)
-        #     context.view_layer.objects.active = pin
-
-        # if len(pins_checklist) > 1 :
-        #     bpy.ops.object.join()
-        # pins_all = context.object
-
-        # # pins_all.display_type = 'WIRE'
-        # context.view_layer.objects.active = joined_splint
-        # bpy.ops.object.select_all(action="DESELECT")
-        # joined_splint.select_set(True)
-
-        # bool_modif_1 = joined_splint.modifiers.new(name="bool1", type="BOOLEAN")
-        # bool_modif_1.object = pins_all
-        # bool_modif_1.operation = "DIFFERENCE"
-
-        # message = ["Guide Processing -> Please wait while performing Booleans :) ..."]
-        # update_info(message)
-
-        # bool_modif_2 = joined_splint.modifiers.new(name="bool2", type="BOOLEAN")
-        # bool_modif_2.object = bool_model_duplicate
-        # bool_modif_2.operation = "DIFFERENCE"
-
-        # bpy.ops.object.convert(target='MESH', keep_original=False)
-        # joined_splint["bdental_type"] = "Guide Splint"
-
-        # for obj in [pins_all, bool_model_duplicate] :
-        #     bpy.data.objects.remove(obj, do_unlink=True)
-        # os.system("cls")
-
-        # message = ["Finished ."]
-        # update_info(message)
-        # sleep(2)
-        # update_info()
-        # return {"FINISHED"}
-
-    # def modal(self, context, event):
-    #     if not event.type in {"ESC", "RET"}:
-    #         return {"PASS_THROUGH"}
-    #     if event.type == "ESC":
-    #         return {"CANCELLED"}
-
-    #     if event.type == "RET" :
-    #         if event.value == ("PRESS"):
-    #             bool_model = context.object
-    #             if not bool_model or bool_model.type != "MESH" :
-    #                 message = ["Operation Cancelled !","Select Passive Blocked Model and try again"]
-    #             # message = ["Guide Processing ..."]
-    #             # update_info(message)
-    #             # splint_checklist = [ obj for obj in context.scene.objects if obj.get("bdental_type") and "bdental_splint" in obj.get("bdental_type")]
-    #             # sleeves_checklist = [ obj for obj in context.scene.objects if obj.get("bdental_type") and "bdental_sleeve" in obj.get("bdental_type") ]
-    #             # pins_checklist = [ obj for obj in context.scene.objects if obj.get("bdental_type") and "bdental_pin" in obj.get("bdental_type") ]
-
-    #             # print("splint_checklist",splint_checklist)
-    #             # print("sleeves_checklist",sleeves_checklist)
-    #             # print("pins_checklist",pins_checklist)
-    #             # splint = splint_checklist[0]
-    #             # splint.hide_set(False)
-    #             # splint.hide_viewport = False
-    #             # context.view_layer.objects.active = splint
-    #             # bpy.ops.object.mode_set(mode="OBJECT")
-    #             # bpy.ops.object.select_all(action="DESELECT")
-    #             # splint.select_set(True)
-
-    #             # for sleeve in sleeves_checklist :
-    #             #     sleeve.hide_set(False)
-    #             #     sleeve.hide_viewport = False
-    #             #     sleeve.select_set(True)
-
-    #             # bpy.ops.object.join()
-    #             # self.joined_splint = context.object
-    #             # remesh = self.joined_splint.modifiers.new(name="Remesh", type="REMESH")
-    #             # bpy.ops.object.convert(target='MESH', keep_original=False)
-
-    #             # bpy.ops.object.select_all(action="DESELECT")
-    #             if len(pins_checklist) > 1 :
-    #                 for pin in pins_checklist :
-    #                     pin.hide_set(False)
-    #                     pin.hide_viewport = False
-    #                     pin.select_set(True)
-    #                     context.view_layer.objects.active = pin
-
-    #                 bpy.ops.object.join()
-    #                 self.pins_all = context.object
-    #                 self.pins_all.select_set(True)
-
-    #             else :
-    #                 pins_checklist[0].hide_set(False)
-    #                 pins_checklist[0].hide_viewport = False
-    #                 pins_checklist[0].select_set(True)
-    #                 context.view_layer.objects.active = pins_checklist[0]
-    #                 self.pins_all = context.object
-
-    #             self.pins_all.display_type = 'WIRE'
-
-    #             bool_modif = self.joined_splint.modifiers.new(name="bool", type="BOOLEAN")
-    #             bool_modif.object = self.pins_all
-    #             bool_modif.operation = "DIFFERENCE"
-
-    #             message = ["Finished ."]
-    #             update_info(message)
-    #             sleep(2)
-    #             update_info()
-    #             return {"FINISHED"}
-
-    #     return {"RUNNING_MODAL"}
-
-    # def invoke(self, context, event):
-    #     self.splint = context.object
-    #     bool_model_pointer = int(self.splint["bool_model_pointer"])
-    #     sleeves_pointers = eval(self.splint["sleeves_pointers"] )
-    #     pins_pointers = eval(self.splint["pins_pointers"] )
-
-    #     bool_model_checklist = [obj for obj in context.scene.objects if obj.as_pointer() == bool_model_pointer]
-    #     sleeves_checklist = [obj for obj in context.scene.objects if obj.as_pointer() in sleeves_pointers]
-    #     pins_checklist = [obj for obj in context.scene.objects if obj.as_pointer() in pins_pointers]
-    #     message = []
-    #     if not bool_model_checklist :
-    #         message.extend(["Operation Cancelled !","Can't find Passive Blocked Model"])
-    #     if not sleeves_checklist :
-    #         message.extend([", Sleeves"])
-    #     if not pins_checklist :
-    #         message.extend([", Pins"])
-    #     if message :
-    #         update_info(message)
-    #         sleep(3)
-    #         update_info()
-    #         return {"CANCELLED"}
-
-    #     self.bool_model = bool_model_checklist[0]
-    #     # modal operator
-    #     context.window_manager.modal_handler_add(self)
-    #     update_info(message)
-    #     return {"RUNNING_MODAL"}
 
 
 class BDENTAL_OT_AddGuideCuttersFromSleeves(bpy.types.Operator):
