@@ -31,22 +31,27 @@ class BDENTAL_PT_MainPanel(bpy.types.Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"  # blender 2.7 and lower = TOOLS
     bl_category = "BDENTAL"
-    bl_label = "BDENTAL"
+    bl_label = f"BDENTAL (ver. {Addon_Version_Date})"
     # bl_options = {"DEFAULT_CLOSED"}
 
     def draw(self, context):
 
         # Draw Addon UI :
         layout = self.layout
+        Box = layout.box()
+        grid = Box.grid_flow(columns=2, align=True)
+        grid.operator("wm.bdental_checkupdate")
+        grid.operator("wm.bdental_support_telegram")
 
-        box = layout.box()
-        box.alignment = "EXPAND"
+        # box = layout.box()
+        # box.alignment = "EXPAND"
 
-        row = box.row()
-        row.alert = True
-        row.label(text=f"ver. {Addon_Version_Date}")
-        row = box.row()
-        row.operator("wm.bdental_checkupdate")
+        # row = box.row()
+        # row.alert = True
+        # row.label(text=f"ver. {Addon_Version_Date}")
+        # row = box.row()
+        # row.operator("wm.bdental_checkupdate")
+        # row.operator("wm.bdental_support_telegram")
         
 
 class BDENTAL_PT_GeneralPanel(bpy.types.Panel):

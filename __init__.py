@@ -330,7 +330,24 @@ def browse(url) :
         return success  
 
 
+class BDENTAL_OT_SupportTelegram(bpy.types.Operator):
+        """ open telegram bdental support link"""
 
+        bl_idname = "wm.bdental_support_telegram"
+        bl_label = "Bdental Support (Telegram)"
+        bl_options = {"REGISTER", "UNDO"}
+
+        @classmethod
+        def poll(cls, context):
+            return isConnected()
+
+
+
+        def execute(self, context):
+            global TELEGRAM_LINK
+            browse(TELEGRAM_LINK)
+            
+            return{"FINISHED"}
 ###################################################
 REQ_DICT = {
     "SimpleITK": "SimpleITK",
@@ -414,24 +431,7 @@ if ERROR_PANEL :
             row = box.row()
             row.operator("wm.bdental_support_telegram")
 
-    class BDENTAL_OT_SupportTelegram(bpy.types.Operator):
-        """ open telegram bdental support link"""
-
-        bl_idname = "wm.bdental_support_telegram"
-        bl_label = "Bdental Support (Telegram)"
-        bl_options = {"REGISTER", "UNDO"}
-
-        @classmethod
-        def poll(cls, context):
-            return isConnected()
-
-
-
-        def execute(self, context):
-            global TELEGRAM_LINK
-            browse(TELEGRAM_LINK)
-            
-            return{"FINISHED"}
+    
 
     addon_modules = []
     init_classes = [
@@ -473,7 +473,7 @@ else:
         BDENTAL_Operators,
         
     ]
-    init_classes = [BdentalAddonPreferences]
+    init_classes = [BdentalAddonPreferences,BDENTAL_OT_SupportTelegram]
 
     def register():
 
