@@ -2814,9 +2814,8 @@ def BDENTAL_SliceUpdate(scene):
     global _IMAGE3D
     ActiveObject = bpy.context.object
     
-    _need_update =  bpy.context.workspace.name == 'Bdental Slicer' and \
-    ActiveObject and\
-    ActiveObject.get("bdental_type") in ("slice_plane", "slices_pointer")
+   
+    _need_update =  ActiveObject and ActiveObject.get("bdental_type") in ("slice_plane", "slices_pointer")
     
     if _need_update :
         BDENTAL_Props = scene.BDENTAL_Props
