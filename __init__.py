@@ -305,7 +305,7 @@ if sys.platform == "win32":
 
 DRAW_HANDLERS = []
 VERSION_URL = "https://raw.githubusercontent.com/issamdakir/Bdental-3-win/main/Resources/BDENTAL_Version.txt"
-github_cmd = "curl -L https://github.com/issamdakir/Bdental-3-win/zipball/main"
+GITHUB_CMD = "curl -L https://github.com/issamdakir/Bdental-3-win/zipball/main"
 TELEGRAM_LINK = "https://t.me/bdental_support"
 REQ_DICT = {
     "SimpleITK": "SimpleITK",
@@ -316,13 +316,13 @@ ERROR_PANEL = False
 ERROR_MESSAGE = []
 ADDON_DIR = dirname(abspath(__file__))
 RESOURCES = join(ADDON_DIR, "Resources")
+ADDON_VER_PATH = join(RESOURCES, "BDENTAL_Version.txt")
+ADDON_VER_DATE = "  "
 
-Addon_Version_Path = join(RESOURCES, "BDENTAL_Version.txt")
-Addon_Version_Date = "  "
-if exists(Addon_Version_Path):
-    with open(Addon_Version_Path, "r") as rf:
+if exists(ADDON_VER_PATH):
+    with open(ADDON_VER_PATH, "r") as rf:
         lines = rf.readlines()
-        Addon_Version_Date = lines[0].split(";")[0]
+        ADDON_VER_DATE = lines[0].split(";")[0]
 
 BDENTAL_MODULES = join(ADDON_DIR, "bdental_modules")
 sys.path.insert(0,BDENTAL_MODULES)
@@ -481,7 +481,8 @@ def update_info(message=[], remove_handlers=True, button=False, btn_txt="", pour
         bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
 
 def addon_download():
-    global github_cmd
+    global GITHUB_CMD
+
     message = []
     download_is_ok = False
     _dir = None 
@@ -493,7 +494,7 @@ def addon_download():
     while _counter <= 3 :
         _counter += 1
         print(_counter)
-        os.system(f"{github_cmd} > {bdental_zip}")
+        os.system(f"{GITHUB_CMD} > {bdental_zip}")
         if exists(bdental_zip) :
             download_is_ok = True
             print(f"number of url curls : {_counter} -> zip file downloaded : ", bdental_zip)
@@ -521,12 +522,12 @@ class BDENTAL_OT_SupportTelegram(bpy.types.Operator):
 
         bl_idname = "wm.bdental_support_telegram"
         bl_label = "Bdental Support (Telegram)"
-        # bl_options = {"REGISTER", "UNDO"}
 
+        #### this freezes blender ui !! ###
         # @classmethod
         # def poll(cls, context):
         #     return isConnected()
-
+        ###################################
 
 
         def execute(self, context):
@@ -566,7 +567,7 @@ class BDENTAL_OT_checkUpdate(bpy.types.Operator):
     
             
     def execute(self, context):
-        global addon_dir
+        global ADDON_DIR
         
         t1 = threading.Thread(
                 target=start_blender_session,
@@ -574,7 +575,7 @@ class BDENTAL_OT_checkUpdate(bpy.types.Operator):
                 daemon=True,
                 )
         
-        addon_update(self._dir, addon_dir)
+        addon_update(self._dir, ADDON_DIR)
         t1.start()
         exit_blender()
         
@@ -587,35 +588,39 @@ class BDENTAL_OT_checkUpdate(bpy.types.Operator):
             update_info()
             return{"CANCELLED"}
 
-        global Addon_Version_Path
+        global ADDON_VER_PATH
         global VERSION_URL
-        update_info(message=["Server connect..."], rect_color=[0.7,0.4,0.2,1])
+        if exists(ADDON_VER_PATH):
+            update_info(message=["Server connect..."], rect_color=[0.7,0.4,0.2,1])
 
-        with open(Addon_Version_Path, "r") as rf:
-            lines = rf.readlines()
-            current = int(lines[0].split(";")[1])
-        import requests
-        success = 0
-        try :
-            r = requests.get(VERSION_URL)
-            success = r.ok
-        except Exception as er :
-            print(f"request github bdental version error : {er}")
-        if not success :
-            update_info(message=["Bdental update : server conexion error !"], rect_color=[1,0,0,0.7])
-            sleep(3)
-            update_info()
-            return{"CANCELLED"}
 
-        last_txt, last_num_txt = r.text.split(";")
-        last_num = int(last_num_txt)
-        if last_num <= current :
-            update_info(message=["Bdental is up to date."], rect_color=[0,1,0.2,0.7])
-            sleep(3)
-            update_info()
-            return{"CANCELLED"}
 
-        update_info(message=[f"new version availible ({last_txt}) Downloading ..."], rect_color=[0.7,0.4,0.2,1])
+            with open(ADDON_VER_PATH, "r") as rf:
+                lines = rf.readlines()
+                current = int(lines[0].split(";")[1])
+            import requests
+            success = 0
+            try :
+                r = requests.get(VERSION_URL)
+                success = r.ok
+            except Exception as er :
+                print(f"request github bdental version error : {er}")
+            if not success :
+                update_info(message=["Bdental update : server conexion error !"], rect_color=[1,0,0,0.7])
+                sleep(3)
+                update_info()
+                return{"CANCELLED"}
+
+            last_txt, last_num_txt = r.text.split(";")
+            last_num = int(last_num_txt)
+            if last_num <= current :
+                update_info(message=["Bdental is up to date."], rect_color=[0,1,0.2,0.7])
+                sleep(3)
+                update_info()
+                return{"CANCELLED"}
+
+            update_info(message=[f"new version availible ({last_txt}) -> Downloading ..."], rect_color=[0.7,0.4,0.2,1])
+        update_info(message=[f"Current version unknown -> Downloading last version ({last_txt}) ..."], rect_color=[0.7,0.4,0.2,1])
         self.message, self._dir = addon_download()
         if self.message :
             update_info(message=self.message, rect_color=[1,0,0,0.7])
@@ -623,14 +628,14 @@ class BDENTAL_OT_checkUpdate(bpy.types.Operator):
             update_info()
             return{"CANCELLED"}
 
-        update_info(message=["Ready for update !"],rect_color=[0.2,1,0.2,1])
+        update_info(message=["Update is ready !"],rect_color=[0.2,1,0.2,1])
         self.txt = [
         "",
-        "",
+        "Update is ready",
         "press OK to confirm",
-        "Blender will restart automatically",
+        "Blender will restart automatically!",
         "",
-        "", ]
+]
 
         wm = context.window_manager
         return wm.invoke_props_dialog(self,width=500)
@@ -642,7 +647,7 @@ class BDENTAL_PT_ModulesErrorPanel(bpy.types.Panel):
         bl_space_type = "VIEW_3D"
         bl_region_type = "UI" 
         bl_category = "BDENTAL"
-        bl_label = f"BDENTAL (ver. {Addon_Version_Date})"
+        bl_label = f"BDENTAL (ver. {ADDON_VER_DATE})"
 
         def draw(self, context):
 
@@ -661,7 +666,7 @@ class BDENTAL_PT_ModulesErrorPanel(bpy.types.Panel):
 ###################################################
 
 print(f"bdental version : {bl_info.get('version')}")
-print(f"bdental version date: {Addon_Version_Date}")
+print(f"bdental version date: {ADDON_VER_DATE}")
 
 new_modules = join(RESOURCES, "bdental_modules")
 if exists(new_modules) :
