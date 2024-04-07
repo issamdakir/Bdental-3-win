@@ -620,7 +620,8 @@ class BDENTAL_OT_checkUpdate(bpy.types.Operator):
                 return{"CANCELLED"}
 
             update_info(message=[f"new version availible ({last_txt}) -> Downloading ..."], rect_color=[0.7,0.4,0.2,1])
-        update_info(message=[f"Current version unknown -> Downloading last version ({last_txt}) ..."], rect_color=[0.7,0.4,0.2,1])
+        else :
+            update_info(message=[f"Current version unknown -> Downloading last version ({last_txt}) ..."], rect_color=[0.7,0.4,0.2,1])
         self.message, self._dir = addon_download()
         if self.message :
             update_info(message=self.message, rect_color=[1,0,0,0.7])
