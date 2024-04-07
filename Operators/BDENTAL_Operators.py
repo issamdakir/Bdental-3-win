@@ -1249,6 +1249,7 @@ class BDENTAL_OT_Organize(bpy.types.Operator):
 
             if UserDcmDir in DcmOrganizeDict.keys():
                 OrganizeReport = DcmOrganizeDict[UserDcmDir]
+                
 
             else:
                 if not exists(UserProjectDir):
@@ -1349,12 +1350,13 @@ class BDENTAL_OT_Organize(bpy.types.Operator):
 
             Message = {}
             for serie, info in OrganizeReport.items():
-                Count, Name, Date, Descript, PatientOrientation = (
+                Count, Name, Date, Descript, PatientOrientation, spacing = (
                     info["Count"],
                     info["Patient Name"],
                     info["Series Date"],
                     info["Series Description"],
-                    info["Patient Orientation"]
+                    info["Patient Orientation"],
+                    info["spacing"]
                 )
                 Message[serie] = {
                     "Count": Count,
@@ -1363,7 +1365,7 @@ class BDENTAL_OT_Organize(bpy.types.Operator):
                     "Series Description": Descript,
                     "Patient Orientation": PatientOrientation,
                 }
-
+            BDENTAL_Props.scan_resolution = max(spacing)
             for serie, info in Message.items():
                 print(serie, ":\n\t", info)
 
@@ -1379,7 +1381,7 @@ class BDENTAL_OT_Organize(bpy.types.Operator):
             # BDENTAL_Props.UserProjectDir = RelPath(UserProjectDir)
 
 
-            n = len(series_IDs_Files)
+            n = len(OrganizeReport)
             txt = [
                 f"{n} dicom series found."]
             if n == 1 :
@@ -8505,14 +8507,19 @@ class BDENTAL_OT_RibbonCutter_Perform_Cut(bpy.types.Operator):
 
             bpy.data.collections.remove(col)
 
-        for obj in context.scene.objects :
+        for obj in context.view_layer.objects :
             if obj in start_unvis_objects :
-                obj.hide_set(True)
+                try :
+                    obj.hide_set(True)
+                except :
+                    pass
             else:
-                obj.hide_set(False)
-                obj.hide_viewport = False
-                obj.hide_select = False
-
+                try :
+                    obj.hide_set(False)
+                    obj.hide_viewport = False
+                    obj.hide_select = False
+                except :
+                    pass
         
         txt = ["Done."]
         update_info(message=txt, rect_color=[0.0,1.0,0,0.7])
@@ -9423,14 +9430,19 @@ class BDENTAL_OT_CurveCutter1_New_Perform_Cut(bpy.types.Operator):
         bpy.data.collections.remove(
             bpy.data.collections["Bdental Cutters"])
 
-        for obj in context.scene.objects :
+        for obj in context.view_layer.objects :
             if obj in start_unvis_objects :
-                obj.hide_set(True)
+                try :
+                    obj.hide_set(True)
+                except:
+                    pass
             else:
-                obj.hide_set(False)
-                obj.hide_viewport = False
-                obj.hide_select = False
-
+                try :
+                    obj.hide_set(False)
+                    obj.hide_viewport = False
+                    obj.hide_select = False
+                except:
+                    pass
         
         txt = ["Done."]
         update_info(message=txt, rect_color=[0.0,1.0,0,0.7])
@@ -12847,8 +12859,8 @@ classes = [
     BDENTAL_OT_SetConfig,
     # BDENTAL_OT_SupportTelegram,
     BDENTAL_OT_RemoveImplant,
-    # BDENTAL_OT_CurveCutter1_New,
-    # BDENTAL_OT_CurveCutter1_New_Perform_Cut,
+    BDENTAL_OT_CurveCutter1_New,
+    BDENTAL_OT_CurveCutter1_New_Perform_Cut,
     BDENTAL_OT_CurveCutter2_Cut_New,
     BDENTAL_OT_AddAppTemplate,
     BDENTAL_OT_MessageBox,

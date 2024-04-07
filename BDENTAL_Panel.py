@@ -96,106 +96,27 @@ class BDENTAL_PT_DicomPanel(bpy.types.Panel):
 
         if BDENTAL_Props.UserProjectDir:
             box = layout.box()
-            split = box.split(factor=1 / 3, align=False)
-            col= split.column()
-            col.label(text="DataType :")
-            col= split.column()
-            col.prop(BDENTAL_Props, "DataType", text="")
-
+            g = box.grid_flow(columns=1, align=True)
+            g.prop(BDENTAL_Props, "DataType", text="Data Type")
             if BDENTAL_Props.DataType == "DICOM Series":
-
-                split = box.split(factor=1 / 3, align=False)
-                col= split.column()
-                col.label(text="DICOM Folder :")
-                col= split.column()
-                col.prop(BDENTAL_Props, "UserDcmDir", text="")
-                
+                g.prop(BDENTAL_Props, "UserDcmDir", text="DICOM Folder")
                 if BDENTAL_Props.UserDcmDir:
-                    # row = box.row()
-                    # row.prop(BDENTAL_Props, "Dicom_Series_mode", expand=True)
-
-                    if BDENTAL_Props.Dicom_Series_mode == "Advanced Mode":
-
-                        if not BDENTAL_Props.Dicom_Series.startswith('Series'):
-
-                            box = layout.box()
-                            row = box.row()
-                            row.operator(
-                                    "wm.bdental_organize"
-                                )
-                        else :
-                            split = box.split(factor=1 / 3, align=False)
-                            col= split.column()
-                            col.label(text="DICOM Series :")
-                            col= split.column()
-                            col.prop(BDENTAL_Props, "Dicom_Series", text="")
-
-                            # serie = BDENTAL_Props.Dicom_Series
-                            # infoDict = eval(OrganizeInfoProp)
-                            # info = infoDict[serie]
-                            # Count, Name, Date, Descript = info['Count'], info['Patient Name'], info['Series Date'], info['Series Description']
-
-                            # layout.separator()
-                            # row = layout.row()
-                            # row.label(text=" DICOM Series Info :")
-
-                            # box = layout.box()
-                            # row = box.row()
-                            # row.label(text=f"Files count : {Count}")
-                            # row = box.row()
-                            # row.label(text=f"Patient Name : {Name}")
-                            # row = box.row()
-                            # row.label(text=f"Series Date : {Date}")
-                            # row = box.row()
-                            # row.label(text=f"Series Description : {Descript}")
-
-                            row = box.row()
-                            row.prop(BDENTAL_Props, "scan_resolution", expand=True)
-
-                            # layout.separator()
-                            # box = layout.box()
-                            row = box.row()
-                            row.operator(
-                                    "wm.bdental_volume_render"
-                                )
-
-                    if BDENTAL_Props.Dicom_Series_mode == "Simple Mode":
-                        # layout.separator()
-                        # box = layout.box()
-                        row = box.row()
-                        row.operator(
-                                "wm.bdental_volume_render"
-                            )
+                    g.prop(BDENTAL_Props, "Dicom_Series", text="DICOM Series")
+                    g.prop(BDENTAL_Props, "scan_resolution")
+                    g.operator("wm.bdental_organize")
+                    g.operator("wm.bdental_volume_render")
 
             if BDENTAL_Props.DataType == "3D Image File":
-
-                # split = box.split(factor=1 / 3, align=False)
-                # col= split.column()
-                # col.label(text="3D IMAGE File :")
-                # col= split.column()
-                g = box.grid_flow(columns=1, align=True)
                 g.prop(BDENTAL_Props, "UserImageFile", text="3D IMAGE File")
-
                 if BDENTAL_Props.UserImageFile:
-                    # layout.separator()
-                    row = box.row()
-                    row.prop(BDENTAL_Props, "scan_resolution", expand=True)
-                    if not BDENTAL_Props.scan_resolution :
-                        row = box.row()
-                        row.operator(
-                                "wm.bdental_organize"
-                            )
-                    else :
-                        row = box.row()
-                        row.operator(
-                                "wm.bdental_volume_render"
-                            )
+                    g.prop(BDENTAL_Props, "scan_resolution")
+                    g.operator("wm.bdental_organize")
+                    g.operator("wm.bdental_volume_render")
 
         if context.object and context.object.get("bdental_type") in ["CT_Voxel"]:
 
             box = layout.box()
-            
-            
+
             g = box.grid_flow(columns=1, align=True)
             g.label(text=f"THTRESHOLD ({Wmin}/{Wmax})")
             g.prop(BDENTAL_Props, "TresholdMin", text="Min", slider=True)

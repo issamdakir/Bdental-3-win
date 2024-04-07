@@ -3779,10 +3779,10 @@ def SplitSeparator(CuttingTarget):
     bpy.ops.mesh.separate(type="LOOSE")
 
     for obj in bpy.context.visible_objects:
-        if not obj.data.polygons:
-            bpy.data.objects.remove(obj)
-        elif len(obj.data.polygons) < 2:
-            bpy.data.objects.remove(obj)
+        if obj.data :
+            if not obj.data.polygons or len(obj.data.polygons) < 5:
+                bpy.data.objects.remove(obj)
+            
     
 
 
