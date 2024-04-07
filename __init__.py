@@ -590,29 +590,30 @@ class BDENTAL_OT_checkUpdate(bpy.types.Operator):
 
         global ADDON_VER_PATH
         global VERSION_URL
+        import requests
+        success = 0
+        update_info(message=["Server connect..."], rect_color=[0.7,0.4,0.2,1])
+        try :
+            r = requests.get(VERSION_URL)
+            success = r.ok
+        except Exception as er :
+            print(f"request github bdental version error : {er}")
+        if not success :
+            update_info(message=["Bdental update : server conexion error !"], rect_color=[1,0,0,0.7])
+            sleep(3)
+            update_info()
+            return{"CANCELLED"}
+
+        last_txt, last_num_txt = r.text.split(";")
+        last_num = int(last_num_txt)
+
+
         if exists(ADDON_VER_PATH):
-            update_info(message=["Server connect..."], rect_color=[0.7,0.4,0.2,1])
-
-
-
             with open(ADDON_VER_PATH, "r") as rf:
                 lines = rf.readlines()
                 current = int(lines[0].split(";")[1])
-            import requests
-            success = 0
-            try :
-                r = requests.get(VERSION_URL)
-                success = r.ok
-            except Exception as er :
-                print(f"request github bdental version error : {er}")
-            if not success :
-                update_info(message=["Bdental update : server conexion error !"], rect_color=[1,0,0,0.7])
-                sleep(3)
-                update_info()
-                return{"CANCELLED"}
-
-            last_txt, last_num_txt = r.text.split(";")
-            last_num = int(last_num_txt)
+            
+            
             if last_num <= current :
                 update_info(message=["Bdental is up to date."], rect_color=[0,1,0.2,0.7])
                 sleep(3)
