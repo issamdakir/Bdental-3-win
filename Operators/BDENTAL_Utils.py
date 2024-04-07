@@ -62,71 +62,6 @@ github_cmd = "curl -L https://github.com/issamdakir/Bdental-3-win/zipball/main"
 ######################################################################
 
 
-def exit_blender():
-    sys.exit(0)
-
-def addon_download():
-    global github_cmd
-    message = []
-    download_is_ok = False
-    _dir = None 
-
-    temp_dir = tempfile.mkdtemp()
-    os.chdir(temp_dir)
-    bdental_zip = join(temp_dir,'Bdental-3.zip')
-    _counter = 0
-    while _counter <= 3 :
-        _counter += 1
-        print(_counter)
-        os.system(f"{github_cmd} > {bdental_zip}")
-        if exists(bdental_zip) :
-            download_is_ok = True
-            print(f"number of url curls : {_counter} -> zip file downloaded : ", bdental_zip)
-            break
-    
-    if not download_is_ok :
-        message.extend(["Error : curl bdental.zip download"])
-        return message,_dir
-
-    
-    
-    try :
-        with zipfile.ZipFile(bdental_zip, 'r') as zip_ref:
-            zip_ref.extractall(temp_dir)
-    except :
-        message.extend([f"Error : extract downloaded zip file {bdental_zip}"])
-        return message,_dir
-    src = [abspath(e) for e in os.listdir(temp_dir) if isdir(abspath(e))][0]
-    _dir = join(temp_dir,"Bdental-3")
-    os.rename(src,_dir)
-    return message,_dir
-
-
-def bdental_update():
-    _cmd = "curl -v -L https://github.com/issamdakir/Bdental-3-win/zipball/main"
-    temp_dir = tempfile.mkdtemp()
-    _output = join(temp_dir,'Bdental-3.zip')
-    _counter = 0
-    while _counter <= 3 :
-        _counter += 1
-        print(_counter)
-        system(f"{_cmd} > {_output}")
-        if exists(_output) :
-            print(_counter,"Break -> zip file downloaded : ", _output)
-            break
-    bdental_3 = None 
-    try :
-        with zipfile.ZipFile(_output, 'r') as zip_ref:
-            zip_ref.extractall(temp_dir)
-        # print("tempdir : ", temp_dir)
-
-        src = [e for e in glob(join(temp_dir, "*")) if not e.endswith(".zip")][0]
-        bdental_3 = join(temp_dir,"Bdental-3")
-        os.rename(src, bdental_3)
-    except :
-        pass
-    return bdental_3
-
 def isConnected():
     try:
         sock = socket.create_connection(("www.google.com", 80))
@@ -2882,103 +2817,103 @@ def BDENTAL_SliceUpdate(scene):
     # _need_update =  bpy.context.workspace.name == 'Bdental Slicer' and \
     _need_update =             ActiveObject and\
                     ActiveObject.get("bdental_type") in ("slice_plane", "slices_pointer")
-    if not _need_update : return None
+    
     
 
-    elif _need_update :
-        BDENTAL_Props = scene.BDENTAL_Props
-        Preffix = scene.get("volume_preffix")
-        if not _IMAGE3D :
-            DcmInfoDict = eval(BDENTAL_Props.DcmInfo)
-            DcmInfo = DcmInfoDict[Preffix]
-            _IMAGE3D = sitk.ReadImage(AbsPath(DcmInfo["Nrrd255Path"]))
-        Image3D_255 = _IMAGE3D
+    # if _need_update :
+    #     BDENTAL_Props = scene.BDENTAL_Props
+    #     Preffix = scene.get("volume_preffix")
+    #     if not _IMAGE3D :
+    #         DcmInfoDict = eval(BDENTAL_Props.DcmInfo)
+    #         DcmInfo = DcmInfoDict[Preffix]
+    #         _IMAGE3D = sitk.ReadImage(AbsPath(DcmInfo["Nrrd255Path"]))
+    #     Image3D_255 = _IMAGE3D
             
-        SlicesDir = BDENTAL_Props.SlicesDir
-        if not exists(SlicesDir):
-            SlicesDir = tempfile.mkdtemp()
-            BDENTAL_Props.SlicesDir = SlicesDir
+    #     SlicesDir = BDENTAL_Props.SlicesDir
+    #     if not exists(SlicesDir):
+    #         SlicesDir = tempfile.mkdtemp()
+    #         BDENTAL_Props.SlicesDir = SlicesDir
 
-        CTVolume = [
-            obj
-            for obj in scene.objects
-            if (Preffix in obj.name and "CTVolume" in obj.name)
-        ][0]
-        TransformMatrix = CTVolume.matrix_world
+    #     CTVolume = [
+    #         obj
+    #         for obj in scene.objects
+    #         if (Preffix in obj.name and "CTVolume" in obj.name)
+    #     ][0]
+    #     TransformMatrix = CTVolume.matrix_world
 
-        #########################################
-        #########################################
+    #     #########################################
+    #     #########################################
         
 
-        # Image3D_255 = sitk.ReadImage(ImageData)
-        Sp = Spacing = Image3D_255.GetSpacing()
-        Sz = Size = Image3D_255.GetSize()
-        Ortho_Origin = (
-            -0.5 * np.array(Sp) * (np.array(Sz) - np.array((1, 1, 1)))
-        )
-        Image3D_255.SetOrigin(Ortho_Origin)
-        Image3D_255.SetDirection(np.identity(3).flatten())
+    #     # Image3D_255 = sitk.ReadImage(ImageData)
+    #     Sp = Spacing = Image3D_255.GetSpacing()
+    #     Sz = Size = Image3D_255.GetSize()
+    #     Ortho_Origin = (
+    #         -0.5 * np.array(Sp) * (np.array(Sz) - np.array((1, 1, 1)))
+    #     )
+    #     Image3D_255.SetOrigin(Ortho_Origin)
+    #     Image3D_255.SetDirection(np.identity(3).flatten())
 
-        # Output Parameters :
-        Out_Origin = [Ortho_Origin[0], Ortho_Origin[1], 0]
-        Out_Direction = Vector(np.identity(3).flatten())
-        Out_Size = (Sz[0], Sz[1], 1)
-        Out_Spacing = Sp
+    #     # Output Parameters :
+    #     Out_Origin = [Ortho_Origin[0], Ortho_Origin[1], 0]
+    #     Out_Direction = Vector(np.identity(3).flatten())
+    #     Out_Size = (Sz[0], Sz[1], 1)
+    #     Out_Spacing = Sp
 
         
-        Planes = [obj for obj in scene.objects if obj.get("bdental_type") == "slice_plane"]
-        for Plane in Planes:
-            ImageName = f"{Plane.name}.png"
-            ImagePath = join(SlicesDir, ImageName)
+    #     Planes = [obj for obj in scene.objects if obj.get("bdental_type") == "slice_plane"]
+    #     for Plane in Planes:
+    #         ImageName = f"{Plane.name}.png"
+    #         ImagePath = join(SlicesDir, ImageName)
 
-            ######################################
-            # Get Plane Orientation and location :
-            PlanMatrix = TransformMatrix.inverted() @ Plane.matrix_world
-            Rot = PlanMatrix.to_euler()
-            Trans = PlanMatrix.translation
-            Rvec = (Rot.x, Rot.y, Rot.z)
-            Tvec = Trans
+    #         ######################################
+    #         # Get Plane Orientation and location :
+    #         PlanMatrix = TransformMatrix.inverted() @ Plane.matrix_world
+    #         Rot = PlanMatrix.to_euler()
+    #         Trans = PlanMatrix.translation
+    #         Rvec = (Rot.x, Rot.y, Rot.z)
+    #         Tvec = Trans
 
-            ##########################################
-            # Euler3DTransform :
-            Euler3D = sitk.Euler3DTransform()
-            Euler3D.SetCenter((0, 0, 0))
-            Euler3D.SetRotation(Rvec[0], Rvec[1], Rvec[2])
-            Euler3D.SetTranslation(Tvec)
-            Euler3D.ComputeZYXOn()
-            #########################################
+    #         ##########################################
+    #         # Euler3DTransform :
+    #         Euler3D = sitk.Euler3DTransform()
+    #         Euler3D.SetCenter((0, 0, 0))
+    #         Euler3D.SetRotation(Rvec[0], Rvec[1], Rvec[2])
+    #         Euler3D.SetTranslation(Tvec)
+    #         Euler3D.ComputeZYXOn()
+    #         #########################################
 
-            Image2D = sitk.Resample(
-                Image3D_255,
-                Out_Size,
-                Euler3D,
-                sitk.sitkLinear,
-                Out_Origin,
-                Out_Spacing,
-                Out_Direction,
-                0,
-            )
+    #         Image2D = sitk.Resample(
+    #             Image3D_255,
+    #             Out_Size,
+    #             Euler3D,
+    #             sitk.sitkLinear,
+    #             Out_Origin,
+    #             Out_Spacing,
+    #             Out_Direction,
+    #             0,
+    #         )
 
-            #############################################
-            # Write Image 1rst solution:
-            Array = sitk.GetArrayFromImage(Image2D)
-            Array = Array.reshape(Array.shape[1], Array.shape[2])
+    #         #############################################
+    #         # Write Image 1rst solution:
+    #         Array = sitk.GetArrayFromImage(Image2D)
+    #         Array = Array.reshape(Array.shape[1], Array.shape[2])
 
-            Array = np.flipud(Array)
-            cv2.imwrite(ImagePath, Array)
+    #         Array = np.flipud(Array)
+    #         cv2.imwrite(ImagePath, Array)
 
-            #############################################
-            # Update Blender Image data :
-            BlenderImage = bpy.data.images.get(ImageName)
-            if not BlenderImage:
-                bpy.data.images.load(ImagePath)
-                BlenderImage = bpy.data.images.get(ImageName)
+    #         #############################################
+    #         # Update Blender Image data :
+    #         BlenderImage = bpy.data.images.get(ImageName)
+    #         if not BlenderImage:
+    #             bpy.data.images.load(ImagePath)
+    #             BlenderImage = bpy.data.images.get(ImageName)
 
-            else:
-                BlenderImage.filepath = ImagePath
-                BlenderImage.reload()
+    #         else:
+    #             BlenderImage.filepath = ImagePath
+    #             BlenderImage.reload()
 
-
+    # sleep(0.1)
 
 ####################################################################
 

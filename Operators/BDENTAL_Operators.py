@@ -214,118 +214,10 @@ def update_slices_txt(remove_handlers=True):
     SLICES_TXT_HANDLER.append(slices_text_handler)
     bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
 
-def addon_update(_dir, addon_dir):
-     
-    for elmt in os.listdir(_dir):
-        fullpath = join(addon_dir,elmt)
-        new_elmt = join(_dir,elmt)
-        if exists(fullpath) :
-            if isfile(fullpath) :
-                os.remove(fullpath)
-                shutil.move(new_elmt, addon_dir)
-            else :
-                if not "bdental_modules" in elmt.lower() :
-                    shutil.rmtree(fullpath)
-                    shutil.move(new_elmt, addon_dir)
-                else :
-                    resources = join(addon_dir, "Resources")
-                    shutil.move(new_elmt, resources)
-
-        
        
 
-def exit_blender():
-    sys.exit(0)
+
     
-class BDENTAL_OT_checkUpdate(bpy.types.Operator):
-    """ check addon update """
-
-    bl_idname = "wm.bdental_checkupdate"
-    bl_label = "check update"
-    bl_options = {"REGISTER", "UNDO"}
-
-    txt = []
-    restart = 0
-    def draw(self, context):
-        
-        layout = self.layout
-        layout.alignment = "EXPAND"
-        layout.alert = True
-        for t in self.txt :
-            layout.label(text=t)
-    
-    
-            
-    def execute(self, context):
-        global addon_dir
-        
-        t1 = threading.Thread(
-                target=start_blender_session,
-                args=[],
-                daemon=True,
-                )
-        
-        addon_update(self._dir, addon_dir)
-        t1.start()
-        exit_blender()
-        
-        return{"FINISHED"}
-
-    def invoke(self, context, event):
-        if not isConnected() :
-            update_info(message=["Bdental update : Please check internet connexion !"], rect_color=[1,0,0,0.7])
-            sleep(3)
-            update_info()
-            return{"CANCELLED"}
-
-        global Addon_Version_Path
-        global VERSION_URL
-        update_info(message=["Server connect..."], rect_color=[0.7,0.4,0.2,1])
-
-        with open(Addon_Version_Path, "r") as rf:
-            lines = rf.readlines()
-            current = int(lines[0].split(";")[1])
-        import requests
-        success = 0
-        try :
-            r = requests.get(VERSION_URL)
-            success = r.ok
-        except Exception as er :
-            print(f"request github bdental version error : {er}")
-        if not success :
-            update_info(message=["Bdental update : server conexion error !"], rect_color=[1,0,0,0.7])
-            sleep(3)
-            update_info()
-            return{"CANCELLED"}
-
-        last_txt, last_num_txt = r.text.split(";")
-        last_num = int(last_num_txt)
-        if last_num <= current :
-            update_info(message=["Bdental is up to date."], rect_color=[0,1,0.2,0.7])
-            sleep(3)
-            update_info()
-            return{"CANCELLED"}
-
-        update_info(message=[f"new version availible ({last_txt}) Downloading ..."], rect_color=[0.7,0.4,0.2,1])
-        self.message, self._dir = addon_download()
-        if self.message :
-            update_info(message=self.message, rect_color=[1,0,0,0.7])
-            sleep(3)
-            update_info()
-            return{"CANCELLED"}
-
-        update_info(message=["Ready for update !"],rect_color=[0.2,1,0.2,1])
-        self.txt = [
-        "",
-        "",
-        "press OK to confirm",
-        "Blender will restart automatically",
-        "",
-        "", ]
-
-        wm = context.window_manager
-        return wm.invoke_props_dialog(self,width=500)
-
 class BDENTAL_OT_SetConfig(bpy.types.Operator):
     """ set bdental config """
 
@@ -367,30 +259,30 @@ class BDENTAL_OT_SetConfig(bpy.types.Operator):
     def invoke(self, context, event):
         wm = context.window_manager
         return wm.invoke_props_dialog(self)
-class BDENTAL_OT_SupportTelegram(bpy.types.Operator):
-    """ open telegram bdental support link"""
+# class BDENTAL_OT_SupportTelegram(bpy.types.Operator):
+#     """ open telegram bdental support link"""
 
-    bl_idname = "wm.bdental_support_telegram"
-    bl_label = "Bdental Support (Telegram)"
-    bl_options = {"REGISTER", "UNDO"}
+#     bl_idname = "wm.bdental_support_telegram"
+#     bl_label = "Bdental Support (Telegram)"
+#     bl_options = {"REGISTER", "UNDO"}
 
-    @classmethod
-    def poll(cls, context):
-        return isConnected()
+#     @classmethod
+#     def poll(cls, context):
+#         return isConnected()
 
 
 
-    def execute(self, context):
-        global TELEGRAM_LINK
-        success = browse(TELEGRAM_LINK)
-        if not success :
-            txt = ["Go to Bdental Support : failed!"]
-            rgba = [1, 0, 0, 1]
-            update_info(message=txt, rect_color=rgba)
-            sleep(3)
-            update_info()
-            return {"CANCELLED"}
-        return{"FINISHED"}
+#     def execute(self, context):
+#         global TELEGRAM_LINK
+#         success = browse(TELEGRAM_LINK)
+#         if not success :
+#             txt = ["Go to Bdental Support : failed!"]
+#             rgba = [1, 0, 0, 1]
+#             update_info(message=txt, rect_color=rgba)
+#             sleep(3)
+#             update_info()
+#             return {"CANCELLED"}
+#         return{"FINISHED"}
 
 
 class BDENTAL_OT_AddAppTemplate(bpy.types.Operator):
@@ -12950,28 +12842,27 @@ class BDENTAL_OT_PathCutter(bpy.types.Operator):
 # Registration :
 #################################################################################################
 classes = [
-    BDENTAL_OT_checkUpdate,
     BDENTAL_OT_RibbonCutterAdd,
     BDENTAL_OT_RibbonCutter_Perform_Cut,
     BDENTAL_OT_SetConfig,
-    BDENTAL_OT_SupportTelegram,
+    # BDENTAL_OT_SupportTelegram,
     BDENTAL_OT_RemoveImplant,
-    BDENTAL_OT_CurveCutter1_New,
-    BDENTAL_OT_CurveCutter1_New_Perform_Cut,
+    # BDENTAL_OT_CurveCutter1_New,
+    # BDENTAL_OT_CurveCutter1_New_Perform_Cut,
     BDENTAL_OT_CurveCutter2_Cut_New,
     BDENTAL_OT_AddAppTemplate,
     BDENTAL_OT_MessageBox,
-    BDENTAL_OT_OpenManual,
+    # BDENTAL_OT_OpenManual,
     # BDENTAL_OT_Template,
     BDENTAL_OT_Organize,
     BDENTAL_OT_Volume_Render,
-    BDENTAL_OT_ResetCtVolumePosition,
+    # BDENTAL_OT_ResetCtVolumePosition,
     BDENTAL_OT_AddSlices,
     BDENTAL_OT_MultiTreshSegment,
     # BDENTAL_OT_MultiView,
-    BDENTAL_OT_MPR,
-    BDENTAL_OT_AddReferencePlanes,
-    BDENTAL_OT_CtVolumeOrientation,
+    # BDENTAL_OT_MPR,
+    # BDENTAL_OT_AddReferencePlanes,
+    # BDENTAL_OT_CtVolumeOrientation,
     BDENTAL_OT_AddMarkupPoint,
     BDENTAL_OT_AddTeeth,
     BDENTAL_OT_AddSleeve,
@@ -12998,7 +12889,7 @@ classes = [
     BDENTAL_OT_OcclusalPlane,
     BDENTAL_OT_OcclusalPlaneInfo,
     BDENTAL_OT_decimate,
-    BDENTAL_OT_clean_mesh,
+    # BDENTAL_OT_clean_mesh,
     BDENTAL_OT_clean_mesh2,
     BDENTAL_OT_fill,
     BDENTAL_OT_retopo_smooth,
@@ -13013,14 +12904,14 @@ classes = [
     BDENTAL_OT_square_cut_confirm,
     BDENTAL_OT_square_cut_exit,
     
-    BDENTAL_OT_PaintArea,
-    BDENTAL_OT_PaintAreaPlus,
-    BDENTAL_OT_PaintAreaMinus,
-    BDENTAL_OT_PaintCut,
+    # BDENTAL_OT_PaintArea,
+    # BDENTAL_OT_PaintAreaPlus,
+    # BDENTAL_OT_PaintAreaMinus,
+    # BDENTAL_OT_PaintCut,
     BDENTAL_OT_AddTube,
-    BDENTAL_OT_Matching2D3D,
-    BDENTAL_OT_XrayToggle,
-    BDENTAL_OT_align_to_cursor,
+    # BDENTAL_OT_Matching2D3D,
+    # BDENTAL_OT_XrayToggle,
+    # BDENTAL_OT_align_to_cursor,
     BDENTAL_OT_LockToPointer,
     BDENTAL_OT_UnlockFromPointer,
     BDENTAL_OT_MPR2,
@@ -13032,7 +12923,7 @@ classes = [
     BDENTAL_OT_AlignToActive,
 
     BDENTAL_OT_SplintGuide,
-    BDENTAL_OT_AddGuideCuttersFromSleeves,
+    # BDENTAL_OT_AddGuideCuttersFromSleeves,
     BDENTAL_OT_GuideFinalise,
     BDENTAL_OT_ExportMesh,
     BDENTAL_OT_UnderctsPreview,
@@ -13066,11 +12957,11 @@ classes = [
     BDENTAL_OT_FlyPrevious,
     BDENTAL_OT_RemoveInfoFooter,
     BDENTAL_OT_guide_3d_text,
-    BDENTAL_OT_CleanMeshIterative,
-    BDENTAL_OT_AutoAlignIcp,
+    # BDENTAL_OT_CleanMeshIterative,
+    # BDENTAL_OT_AutoAlignIcp,
     BDENTAL_OT_SlicesPointerSelect,
     BDENTAL_OT_OverhangsPreview,
-    BDENTAL_OT_PathCutter,
+    # BDENTAL_OT_PathCutter,
 
 ]
 

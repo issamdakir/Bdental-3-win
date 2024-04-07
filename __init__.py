@@ -287,8 +287,14 @@ import zipfile
 import socket
 import webbrowser
 from importlib import import_module
-from os.path import dirname, join, abspath, expanduser,exists
+from os.path import dirname, join, abspath, expanduser,exists, isfile, isdir
 from time import sleep
+import threading
+import gpu
+from gpu_extras.batch import batch_for_shader
+import blf
+import tempfile
+
 if sys.platform == "win32":
     sys.stdout.reconfigure(
         encoding="cp65001"
@@ -297,8 +303,30 @@ if sys.platform == "win32":
 
 
 
-
+DRAW_HANDLERS = []
+VERSION_URL = "https://raw.githubusercontent.com/issamdakir/Bdental-3-win/main/Resources/BDENTAL_Version.txt"
+github_cmd = "curl -L https://github.com/issamdakir/Bdental-3-win/zipball/main"
 TELEGRAM_LINK = "https://t.me/bdental_support"
+REQ_DICT = {
+    "SimpleITK": "SimpleITK",
+    "vtk": "vtk",
+    "cv2.aruco": "opencv-contrib-python",
+}
+ERROR_PANEL = False
+ERROR_MESSAGE = []
+ADDON_DIR = dirname(abspath(__file__))
+RESOURCES = join(ADDON_DIR, "Resources")
+
+Addon_Version_Path = join(RESOURCES, "BDENTAL_Version.txt")
+Addon_Version_Date = "  "
+if exists(Addon_Version_Path):
+    with open(Addon_Version_Path, "r") as rf:
+        lines = rf.readlines()
+        Addon_Version_Date = lines[0].split(";")[0]
+
+BDENTAL_MODULES = join(ADDON_DIR, "bdental_modules")
+sys.path.insert(0,BDENTAL_MODULES)
+# BDENTAL_MODULES_ZIP = join(RESOURCES, "bdental_modules.zip")
 #############################################################
 def ImportReq(REQ_DICT):
     Pkgs = []
@@ -327,19 +355,177 @@ def browse(url) :
         return success
     except Exception as er :
         print(f"open telegram link error :\n{er}")
-        return success  
+        return success
 
+def start_blender_session():
+    # print(f"binary path : {bpy.app.binary_path}")
+    os.system(f'"{bpy.app.binary_path}"')
+
+def addon_update(_dir, addon_dir):
+     
+    for elmt in os.listdir(_dir):
+        fullpath = join(addon_dir,elmt)
+        new_elmt = join(_dir,elmt)
+        if exists(fullpath) :
+            if isfile(fullpath) :
+                os.remove(fullpath)
+                shutil.move(new_elmt, addon_dir)
+            else :
+                if not "bdental_modules" in elmt.lower() :
+                    shutil.rmtree(fullpath)
+                    shutil.move(new_elmt, addon_dir)
+                else :
+                    resources = join(addon_dir, "Resources")
+                    shutil.move(new_elmt, resources)
+
+def exit_blender():
+    sys.exit(0)
+
+def gpu_info_footer(rect_color, text_list, button=False, btn_txt="", pourcentage=100):
+    if pourcentage <= 0:
+        pourcentage = 1
+    if pourcentage > 100:
+        pourcentage = 100
+
+    def draw_callback_function():
+
+        w = int(bpy.context.area.width * (pourcentage/100))
+        for i, txt in enumerate((reversed(text_list))):
+
+            h = 30
+            # color = [0.4, 0.4, 0.8, 1.000000]
+            # color =[0.9, 0.5, 0.000000, 1.000000]
+            draw_gpu_rect(0, h*i, w, h, rect_color)
+            blf.position(0, 10, 10 + (h*i), 0)
+            blf.size(0, 40, 30)
+            r, g, b, a = (0.0, 0.0, 0.0, 1.0)
+            blf.color(0, r, g, b, a)
+            blf.draw(0, txt)
+
+        if button:
+
+            h = 30
+            color = [0.8, 0.258385, 0.041926, 1.0]
+            draw_gpu_rect(w-110, 2, 100, h-4, color)
+            blf.position(0, w-85, 10, 0)
+            blf.size(0, 40, 30)
+            r, g, b, a = (0.0, 0.0, 0.0, 1.0)
+            blf.color(0, r, g, b, a)
+            blf.draw(0, btn_txt)
+
+    info_handler = bpy.types.SpaceView3D.draw_handler_add(
+        draw_callback_function, (), "WINDOW", "POST_PIXEL"
+    )
+    # redraw scene
+    # bpy.ops.wm.redraw_timer(type = 'DRAW_WIN_SWAP', iterations = 1)
+    # for area in bpy.context.window.screen.areas:
+    #     if area.type == "VIEW_3D":
+    #         area.tag_redraw()
+
+    return info_handler
+
+def get_btn_bb(btn_index=0, btn_width=100, btn_height=26, padding_x=10, padding_y=2, safe_area=5):
+    area3d = None
+    area3d_check = [
+        area for area in bpy.context.screen.areas if area.type == "VIEW_3D"]
+    if area3d_check:
+        area3d = area3d_check[0]
+    if area3d:
+        w = area3d.width
+        x_min = w - padding_x - (btn_width*(btn_index+1)) - \
+            (padding_x*btn_index) - safe_area
+        x_max = w - padding_x - (btn_width*(btn_index)) - \
+            (padding_x*btn_index) + safe_area
+        y_min = 0
+        y_max = btn_height+safe_area
+        btn_bb = {
+            "x_min": x_min,
+            "x_max": x_max,
+            "y_min": y_min,
+            "y_max": y_max
+        }
+        return btn_bb
+    else:
+        return None
+
+def draw_gpu_rect(x, y, w, h, rect_color):
+
+    vertices = (
+        (x, y), (x, y + h),
+        (x + w, y + h), (x + w, y))
+
+    indices = (
+        (0, 1, 2), (0, 2, 3)
+    )
+
+    gpu.state.blend_set('ALPHA')
+    shader = gpu.shader.from_builtin('2D_UNIFORM_COLOR')
+    batch = batch_for_shader(
+        shader, 'TRIS', {"pos": vertices}, indices=indices)
+    shader.bind()
+    shader.uniform_float("color", rect_color)
+    batch.draw(shader)
+
+def update_info(message=[], remove_handlers=True, button=False, btn_txt="", pourcentage=100, redraw_timer=True, rect_color=[0.4, 0.4, 0.8, 1.000000]):
+    global DRAW_HANDLERS
+
+    if remove_handlers:
+        for _h in DRAW_HANDLERS:
+            bpy.types.SpaceView3D.draw_handler_remove(_h, "WINDOW")
+        DRAW_HANDLERS = []
+    if message:
+        info_handler = gpu_info_footer(
+            text_list=message, button=False, btn_txt="", pourcentage=100, rect_color=rect_color)
+        DRAW_HANDLERS.append(info_handler)
+    if redraw_timer:
+        bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
+
+def addon_download():
+    global github_cmd
+    message = []
+    download_is_ok = False
+    _dir = None 
+
+    temp_dir = tempfile.mkdtemp()
+    os.chdir(temp_dir)
+    bdental_zip = join(temp_dir,'Bdental-3.zip')
+    _counter = 0
+    while _counter <= 3 :
+        _counter += 1
+        print(_counter)
+        os.system(f"{github_cmd} > {bdental_zip}")
+        if exists(bdental_zip) :
+            download_is_ok = True
+            print(f"number of url curls : {_counter} -> zip file downloaded : ", bdental_zip)
+            break
+    
+    if not download_is_ok :
+        message.extend(["Error : curl bdental.zip download"])
+        return message,_dir
+
+    
+    
+    try :
+        with zipfile.ZipFile(bdental_zip, 'r') as zip_ref:
+            zip_ref.extractall(temp_dir)
+    except :
+        message.extend([f"Error : extract downloaded zip file {bdental_zip}"])
+        return message,_dir
+    src = [abspath(e) for e in os.listdir(temp_dir) if isdir(abspath(e))][0]
+    _dir = join(temp_dir,"Bdental-3")
+    os.rename(src,_dir)
+    return message,_dir
 
 class BDENTAL_OT_SupportTelegram(bpy.types.Operator):
         """ open telegram bdental support link"""
 
         bl_idname = "wm.bdental_support_telegram"
         bl_label = "Bdental Support (Telegram)"
-        bl_options = {"REGISTER", "UNDO"}
+        # bl_options = {"REGISTER", "UNDO"}
 
-        @classmethod
-        def poll(cls, context):
-            return isConnected()
+        # @classmethod
+        # def poll(cls, context):
+        #     return isConnected()
 
 
 
@@ -348,115 +534,8 @@ class BDENTAL_OT_SupportTelegram(bpy.types.Operator):
             browse(TELEGRAM_LINK)
             
             return{"FINISHED"}
-###################################################
-REQ_DICT = {
-    "SimpleITK": "SimpleITK",
-    "vtk": "vtk",
-    "cv2.aruco": "opencv-contrib-python",
-}
-ERROR_PANEL = False
-ERROR_MESSAGE = []
-ADDON_DIR = dirname(abspath(__file__))
 
-
-
-RESOURCES = join(ADDON_DIR, "Resources")
-BDENTAL_MODULES = join(ADDON_DIR, "bdental_modules")
-BDENTAL_MODULES_ZIP = join(RESOURCES, "bdental_modules.zip")
-
-
-Addon_Version_Path = join(RESOURCES, "BDENTAL_Version.txt")
-if exists(Addon_Version_Path):
-    with open(Addon_Version_Path, "r") as rf:
-        lines = rf.readlines()
-        Addon_Version_Date = lines[0].split(";")[0]
-else:
-    Addon_Version_Date = "  "
-
-ERROR_MESSAGE.extend([
-    f"bdental version : {bl_info.get('version')}",
-    f"bdental version date: {Addon_Version_Date}",
-])
-
-print(f"bdental version : {bl_info.get('version')}")
-print(f"bdental version date: {Addon_Version_Date}")
-
-
-if not exists(BDENTAL_MODULES) :
-    if not exists(BDENTAL_MODULES_ZIP) :
-        ERROR_PANEL = True
-        ERROR_MESSAGE.append( "bdental_modules.zip not found")
-
-    else :
-        with zipfile.ZipFile(BDENTAL_MODULES_ZIP, 'r') as zip_ref:
-            zip_ref.extractall(ADDON_DIR)
-
-if not ERROR_PANEL :
-    new_modules = join(RESOURCES, "bdental_modules")
-    if exists(new_modules) :
-        sleep(3)
-        shutil.rmtree(BDENTAL_MODULES)
-        shutil.move(new_modules, ADDON_DIR)
-    sys.path.insert(0,BDENTAL_MODULES)
-    NotFoundPkgs = ImportReq(REQ_DICT)
-    if NotFoundPkgs :
-        ERROR_PANEL = True
-        ERROR_MESSAGE.extend([
-            "Bdental Modules are not installed properly",
-            "Please contact support",
-        ])
-
-if ERROR_PANEL :
-
-    class BDENTAL_PT_ModulesErrorPanel(bpy.types.Panel):
-        """ Modules error panel"""
-
-        bl_idname = "BDENTAL_PT_ModulesErrorPanel"
-        bl_space_type = "VIEW_3D"
-        bl_region_type = "UI" 
-        bl_category = "BDENTAL"
-        bl_label = "BDENTAL"
-
-        def draw(self, context):
-
-            layout = self.layout
-            
-            box = layout.box()
-            for l in ERROR_MESSAGE :
-                row = box.row(align=True)
-                row.alert = True
-                row.alignment = "EXPAND"
-                row.label(text=l)
-
-            row = box.row()
-            row.operator("wm.bdental_support_telegram")
-
-    
-
-    addon_modules = []
-    init_classes = [
-        BDENTAL_OT_SupportTelegram,
-        BDENTAL_PT_ModulesErrorPanel,
-    ]
-    
-    def register():
-
-        for module in addon_modules:
-            module.register()
-        for cl in init_classes:
-            bpy.utils.register_class(cl)
-
-    def unregister():
-        for cl in reversed(init_classes):
-            bpy.utils.unregister_class(cl)
-        for module in reversed(addon_modules):
-            module.unregister()
-else:
-    from . import BDENTAL_Props, BDENTAL_Panel
-    from .Operators import (
-            BDENTAL_Operators,
-        )
-    class BdentalAddonPreferences(bpy.types.AddonPreferences):
+class BdentalAddonPreferences(bpy.types.AddonPreferences):
         bl_idname = __name__
 
         def draw(self, context):
@@ -467,16 +546,192 @@ else:
             row = box.row()
             row.operator("wm.bdental_set_config", text="Bdental as default", icon="TOOL_SETTINGS")
 
-    addon_modules = [
-        BDENTAL_Props,
-        BDENTAL_Panel,
-        BDENTAL_Operators,
+class BDENTAL_OT_checkUpdate(bpy.types.Operator):
+    """ check addon update """
+
+    bl_idname = "wm.bdental_checkupdate"
+    bl_label = "check update"
+    bl_options = {"REGISTER", "UNDO"}
+
+    txt = []
+    restart = 0
+    def draw(self, context):
         
+        layout = self.layout
+        layout.alignment = "EXPAND"
+        layout.alert = True
+        for t in self.txt :
+            layout.label(text=t)
+    
+    
+            
+    def execute(self, context):
+        global addon_dir
+        
+        t1 = threading.Thread(
+                target=start_blender_session,
+                args=[],
+                daemon=True,
+                )
+        
+        addon_update(self._dir, addon_dir)
+        t1.start()
+        exit_blender()
+        
+        return{"FINISHED"}
+
+    def invoke(self, context, event):
+        if not isConnected() :
+            update_info(message=["Bdental update : Please check internet connexion !"], rect_color=[1,0,0,0.7])
+            sleep(3)
+            update_info()
+            return{"CANCELLED"}
+
+        global Addon_Version_Path
+        global VERSION_URL
+        update_info(message=["Server connect..."], rect_color=[0.7,0.4,0.2,1])
+
+        with open(Addon_Version_Path, "r") as rf:
+            lines = rf.readlines()
+            current = int(lines[0].split(";")[1])
+        import requests
+        success = 0
+        try :
+            r = requests.get(VERSION_URL)
+            success = r.ok
+        except Exception as er :
+            print(f"request github bdental version error : {er}")
+        if not success :
+            update_info(message=["Bdental update : server conexion error !"], rect_color=[1,0,0,0.7])
+            sleep(3)
+            update_info()
+            return{"CANCELLED"}
+
+        last_txt, last_num_txt = r.text.split(";")
+        last_num = int(last_num_txt)
+        if last_num <= current :
+            update_info(message=["Bdental is up to date."], rect_color=[0,1,0.2,0.7])
+            sleep(3)
+            update_info()
+            return{"CANCELLED"}
+
+        update_info(message=[f"new version availible ({last_txt}) Downloading ..."], rect_color=[0.7,0.4,0.2,1])
+        self.message, self._dir = addon_download()
+        if self.message :
+            update_info(message=self.message, rect_color=[1,0,0,0.7])
+            sleep(3)
+            update_info()
+            return{"CANCELLED"}
+
+        update_info(message=["Ready for update !"],rect_color=[0.2,1,0.2,1])
+        self.txt = [
+        "",
+        "",
+        "press OK to confirm",
+        "Blender will restart automatically",
+        "",
+        "", ]
+
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self,width=500)
+
+class BDENTAL_PT_ModulesErrorPanel(bpy.types.Panel):
+        """ Modules error panel"""
+
+        bl_idname = "BDENTAL_PT_ModulesErrorPanel"
+        bl_space_type = "VIEW_3D"
+        bl_region_type = "UI" 
+        bl_category = "BDENTAL"
+        bl_label = f"BDENTAL (ver. {Addon_Version_Date})"
+
+        def draw(self, context):
+
+            layout = self.layout
+            
+            box = layout.box()
+            grid = box.grid_flow(columns=1, align=True)
+            grid.alert = True
+            for l in ERROR_MESSAGE :
+                grid.label(text=l)
+            grid = box.grid_flow(columns=2, align=True)
+            grid.operator("wm.bdental_checkupdate")
+            grid.operator("wm.bdental_support_telegram")
+
+
+###################################################
+
+print(f"bdental version : {bl_info.get('version')}")
+print(f"bdental version date: {Addon_Version_Date}")
+
+new_modules = join(RESOURCES, "bdental_modules")
+if exists(new_modules) :
+    sleep(3)
+    if exists(BDENTAL_MODULES):
+        shutil.rmtree(BDENTAL_MODULES)
+
+    shutil.move(new_modules, ADDON_DIR)
+
+
+
+if not exists(BDENTAL_MODULES) :
+    ERROR_PANEL = True
+    ERROR_MESSAGE.extend([
+            "Bdental Modules are not installed properly",
+            "Please update the addon or",
+            "contact support",
+        ])
+
+if not ERROR_PANEL :
+    
+    NotFoundPkgs = ImportReq(REQ_DICT)
+    if NotFoundPkgs :
+        ERROR_PANEL = True
+        ERROR_MESSAGE.extend([
+            "Bdental Modules are not installed properly",
+            "Please update the addon or",
+            "contact support",
+        ])
+
+if ERROR_PANEL :
+    addon_modules = []
+    init_classes = [
+            BDENTAL_OT_SupportTelegram,
+            BDENTAL_OT_checkUpdate,
+            BDENTAL_PT_ModulesErrorPanel,
+        ]
+    def register():
+        
+        for module in addon_modules:
+            module.register()
+        for cl in init_classes:
+            bpy.utils.register_class(cl)
+
+    def unregister():
+        
+        for cl in reversed(init_classes):
+            bpy.utils.unregister_class(cl)
+        for module in reversed(addon_modules):
+            module.unregister()
+else:
+    
+    from . import BDENTAL_Props, BDENTAL_Panel
+    from .Operators import (
+        BDENTAL_Operators,
+    )
+    addon_modules = [
+    BDENTAL_Props,
+    BDENTAL_Panel,
+    BDENTAL_Operators,
+    
     ]
-    init_classes = [BdentalAddonPreferences,BDENTAL_OT_SupportTelegram]
+    init_classes = [
+        BDENTAL_OT_SupportTelegram,
+        BdentalAddonPreferences,
+        BDENTAL_OT_checkUpdate,
+        ]
 
     def register():
-
+        
         for module in addon_modules:
             module.register()
         for cl in init_classes:
@@ -487,6 +742,7 @@ else:
             bpy.utils.unregister_class(cl)
         for module in reversed(addon_modules):
             module.unregister()
+        
 
 if __name__ == "__main__":
     register()

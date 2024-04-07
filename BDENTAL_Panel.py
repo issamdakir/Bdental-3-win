@@ -4,13 +4,16 @@ from .Operators.BDENTAL_Utils import *
 
 
 ADDON_DIR = dirname(abspath(__file__))
-Addon_Version_Path = join(ADDON_DIR, "Resources", "BDENTAL_Version.txt")
+RESOURCES = join(ADDON_DIR, "Resources")
+Addon_Version_Path = join(RESOURCES, "BDENTAL_Version.txt")
+Addon_Version_Date = "  "
 if exists(Addon_Version_Path):
     with open(Addon_Version_Path, "r") as rf:
         lines = rf.readlines()
         Addon_Version_Date = lines[0].split(";")[0]
-else:
-    Addon_Version_Date = "  "
+
+
+    
 # Selected icons :
 red_icon = "COLORSET_01_VEC"
 orange_icon = "COLORSET_02_VEC"
@@ -38,21 +41,10 @@ class BDENTAL_PT_MainPanel(bpy.types.Panel):
 
         # Draw Addon UI :
         layout = self.layout
-        Box = layout.box()
-        grid = Box.grid_flow(columns=2, align=True)
+        # Box = layout.box()
+        grid = layout.grid_flow(columns=2, align=True)
         grid.operator("wm.bdental_checkupdate")
         grid.operator("wm.bdental_support_telegram")
-
-        # box = layout.box()
-        # box.alignment = "EXPAND"
-
-        # row = box.row()
-        # row.alert = True
-        # row.label(text=f"ver. {Addon_Version_Date}")
-        # row = box.row()
-        # row.operator("wm.bdental_checkupdate")
-        # row.operator("wm.bdental_support_telegram")
-        
 
 class BDENTAL_PT_GeneralPanel(bpy.types.Panel):
     """General Panel"""
@@ -62,7 +54,7 @@ class BDENTAL_PT_GeneralPanel(bpy.types.Panel):
     bl_region_type = "UI"  # blender 2.7 and lower = TOOLS
     bl_category = "BDENTAL"
     bl_label = "GENERAL"
-    # bl_options = {"DEFAULT_CLOSED"}
+    bl_options = {"DEFAULT_CLOSED"}
 
     def draw(self, context):
         BDENTAL_Props = context.scene.BDENTAL_Props
@@ -87,29 +79,6 @@ class BDENTAL_PT_GeneralPanel(bpy.types.Panel):
         grid.operator("wm.save_as_mainfile", text="Save As...", icon="FILE_BLEND")
         grid.operator("wm.bdental_export_mesh", icon="EXPORT")
         
-        # if bpy.data.is_dirty :
-        #     grid.alert = True
-        
-        # row = box.row()
-        # row.operator("wm.open_mainfile", text="Open", icon="FILE_FOLDER")
-        # row.operator("wm.save_as_mainfile", text="Save As...", icon="FILE_BLEND")
-
-        
-        # col = row.column()
-        # if bpy.data.is_dirty :
-        #     col.alert = True
-        # col.operator("wm.save_mainfile", text="Save", icon="FOLDER_REDIRECT")
-
-        # row = box.row()
-        # row.operator("ed.undo", text="Undo", icon="LOOP_BACK")
-        # row.operator("ed.redo", text="Redo", icon="LOOP_FORWARDS")
-        # row.operator("wm.bdental_remove_info_footer", icon="CANCEL")
-
-        # box.separator()
-        # row = box.row()
-        # row.operator("wm.bdental_import_mesh", icon="IMPORT")
-        # row.operator("wm.bdental_export_mesh", icon="EXPORT")
-
 class BDENTAL_PT_DicomPanel(bpy.types.Panel):
     """Dicom Panel"""
 
@@ -122,10 +91,7 @@ class BDENTAL_PT_DicomPanel(bpy.types.Panel):
 
     def draw(self, context):
 
-
         BDENTAL_Props = context.scene.BDENTAL_Props
-
-        OrganizeInfoProp = BDENTAL_Props.OrganizeInfoProp
         layout = self.layout
 
         if BDENTAL_Props.UserProjectDir:
@@ -252,30 +218,6 @@ class BDENTAL_PT_DicomPanel(bpy.types.Panel):
             g = box.grid_flow(columns=1, align=True)
             g.operator("wm.bdental_multitresh_segment")
 
-            # layout.separator()
-
-            # row = layout.row()
-            # row.label(text="DICOM TO MESH :")
-
-            # Box = layout.box()
-            # row = Box.row()
-            # row.prop(BDENTAL_Props, "SoftTreshold", text="Soft Tissu")
-            # row.prop(BDENTAL_Props, "SoftSegmentColor", text="")
-            # row.prop(BDENTAL_Props, "SoftBool", text="")
-            # row = Box.row()
-            # row.prop(BDENTAL_Props, "BoneTreshold", text="Bone")
-            # row.prop(BDENTAL_Props, "BoneSegmentColor", text="")
-            # row.prop(BDENTAL_Props, "BoneBool", text="")
-
-            # row = Box.row()
-            # row.prop(BDENTAL_Props, "TeethTreshold", text="Teeth")
-            # row.prop(BDENTAL_Props, "TeethSegmentColor", text="")
-            # row.prop(BDENTAL_Props, "TeethBool", text="")
-
-            # Box = layout.box()
-            # row = Box.row()
-            # row.operator("wm.bdental_multitresh_segment")
-              
 class BDENTAL_PT_SlicesPanel(bpy.types.Panel):
     """Slices Panel"""
 
@@ -344,15 +286,6 @@ class BDENTAL_PT_ToolsPanel(bpy.types.Panel):
         BDENTAL_Props = context.scene.BDENTAL_Props
         layout = self.layout
 
-        # #import / export :
-        # layout.label(text="IMPORT/EXPORT :", icon=yellow_point)
-        # Box = layout.box()
-        # row = Box.row()
-        # row.operator("wm.bdental_import_mesh", icon="IMPORT")
-        # row.operator("wm.bdental_export_mesh", icon="EXPORT")
-
-        # layout.separator()
-        
         # Model color :
         Box = layout.box()
         Box.label(text="COLOR")#icon=yellow_point
@@ -514,42 +447,13 @@ class BDENTAL_PT_ImplantPanel(bpy.types.Panel):
         g.operator("wm.bdental_add_implant", text="Add Implant", icon="ADD")
         g.operator("wm.bdental_lock_to_pointer")
         g.operator("wm.bdental_implant_to_pointer")
-        
-
-
-
-
+   
         g.operator("wm.bdental_remove_implant", text="Remove Implant" , icon="REMOVE")
         g.operator("wm.bdental_unlock_from_pointer")
         g.operator("wm.bdental_pointer_to_implant")
 
         g = Box.grid_flow(columns=1, align=True)
         g.operator("wm.bdental_align_implants")
-        # row = Box.row()
-        # row.operator("wm.bdental_add_implant")
-        # row.operator("wm.bdental_remove_implant")
-
-        
-
-        # row = Box.row()
-        # row.operator("wm.bdental_lock_to_pointer")
-        # row.operator("wm.bdental_unlock_from_pointer")
-
-        # row = Box.row()
-        # row.operator("wm.bdental_implant_to_pointer")
-        # row.operator("wm.bdental_pointer_to_implant")
-
-        # row = Box.row()
-        # row.alignment = "CENTER"
-        # row.label(text="Pointer Jump :")
-        # row.operator("wm.bdental_fly_previous", text="", icon="TRIA_LEFT")
-        # row.operator("wm.bdental_fly_next", text="", icon="TRIA_RIGHT")
-        # row.operator("wm.bdental_remove_info_footer", icon="CANCEL")
-
-        # Box.separator()
-
-        # row = Box.row()
-        # row.operator("wm.bdental_align_implants")
               
 class BDENTAL_PT_Guide(bpy.types.Panel):
     """ Guide Panel"""
@@ -603,7 +507,6 @@ class BDENTAL_PT_Guide(bpy.types.Panel):
         
         row = Box.row()
         row.operator("wm.bdental_guide_finalise")
-
 
 ####################################################################
 class BDENTAL_PT_Align(bpy.types.Panel):
