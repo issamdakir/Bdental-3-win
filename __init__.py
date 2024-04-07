@@ -630,6 +630,8 @@ class BDENTAL_OT_checkUpdate(bpy.types.Operator):
             return{"CANCELLED"}
 
         update_info(message=["Update is ready !"],rect_color=[0.2,1,0.2,1])
+        sleep(2)
+        update_info()
         self.txt = [
         "",
         "Update is ready",
