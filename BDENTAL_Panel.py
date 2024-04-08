@@ -26,7 +26,11 @@ blue_point = "KEYTYPE_BREAKDOWN_VEC"
 
 Wmin, Wmax = -400, 3000
 
+def get_icon_value(icon_name: str) -> int:
+    icon_items = bpy.types.UILayout.bl_rna.functions["prop"].parameters["icon"].enum_items.items()
+    icon_dict = {tup[1].identifier : tup[1].value for tup in icon_items}
 
+    return icon_dict[icon_name]
 class BDENTAL_PT_MainPanel(bpy.types.Panel):
     """Main Panel"""
 
@@ -206,49 +210,54 @@ class BDENTAL_PT_ToolsPanel(bpy.types.Panel):
     def draw(self, context):
         BDENTAL_Props = context.scene.BDENTAL_Props
         layout = self.layout
-
+        ob = context.object
+        mat = ob.active_material
         # Model color :
+        if ob and ob.type in ["MESH", "CURVE"]:
+            try :
+                
+                Box = layout.box()
+                
+                grid = Box.grid_flow(columns=2, align=True)
+                grid.label(text="COLOR")#icon=yellow_point
+                # grid.operator("wm.bdental_add_color", text="Add Color", icon="MATERIAL")
+                grid.template_ID(context.object, "active_material",new="material.new",live_icon=0)
+                if mat :
+                    grid.prop(mat, "diffuse_color", text="")
+                    grid.operator("wm.bdental_remove_color", text="Remove Color")
+                else :
+                    grid.template_icon(get_icon_value("COLORSET_12_VEC"), scale=1.5)
+                    grid.operator("wm.bdental_remove_color", text="Remove Color")
+            except :
+                pass
+
         Box = layout.box()
-        Box.label(text="COLOR")#icon=yellow_point
-        grid = Box.grid_flow(columns=3, align=True)
-        grid.operator("wm.bdental_add_color", text="Add Color", icon="MATERIAL")
-        if context.object:
-            mat = context.object.active_material
-            if mat:
-                grid.prop(mat, "diffuse_color", text="")
-            else:
-                grid.prop(BDENTAL_Props, "no_material_prop", text="")
-
-        grid.operator("wm.bdental_remove_color", text="Remove Color")
-
-        # Join / Link ops :
-        layout.separator()
-        
-
-        Box = layout.box()
-        Box.label(text="RELATIONS")
         grid = Box.grid_flow(columns=2, align=True)
+        grid.label(text="RELATIONS")
         grid.operator("wm.bdental_parent_object", text="Parent", icon="LINKED")
         grid.operator("wm.bdental_join_objects", text="Join", icon="SNAP_FACE")
         grid.operator("wm.bdental_lock_objects", text="Lock", icon="LOCKED")
+
+        grid.template_icon(get_icon_value("LINKED"), scale=1.5)
         grid.operator("wm.bdental_unparent_objects", text="Un-Parent", icon="LIBRARY_DATA_OVERRIDE")
         grid.operator("wm.bdental_separate_objects", text="Separate", icon="SNAP_VERTEX")
         grid.operator("wm.bdental_unlock_objects", text="Un-Lock", icon="UNLOCKED")
 
         # Model Repair Tools :
-        layout.separator()
+        # layout.separator()
         
         Box = layout.box()
-        Box.label(text="REPAIR")
         grid = Box.grid_flow(columns=2, align=True)
+        grid.label(text="REPAIR")  
         grid.operator("wm.bdental_decimate", text="Decimate", icon="MOD_DECIM")
         grid.operator("wm.bdental_clean_mesh2", text="Clean Mesh", icon="BRUSH_DATA")
         grid.operator("wm.bdental_retopo_smooth", text="Retopo-Smooth", icon="SMOOTHCURVE")
         grid.operator("wm.bdental_normals_toggle")
 
+        grid.template_icon(get_icon_value("TOOL_SETTINGS"), scale=1.5)
         grid.prop(BDENTAL_Props, "decimate_ratio", text="")
         grid.operator("wm.bdental_voxelremesh", text="Remesh", icon="MOD_REMESH")
-        if context.object and context.object.mode == "SCULPT":
+        if ob and ob.mode == "SCULPT":
             try : grid.operator("sculpt.sample_detail_size", text="", icon="EYEDROPPER")
             except : grid.operator("wm.bdental_fill", text="Fill", icon="OUTLINER_OB_LIGHTPROBE")
         else : grid.operator("wm.bdental_fill", text="Fill", icon="OUTLINER_OB_LIGHTPROBE")
@@ -256,12 +265,14 @@ class BDENTAL_PT_ToolsPanel(bpy.types.Panel):
 
 
         # Cutting Tools :
-        layout.row().separator()
+        # layout.row().separator()
         Box = layout.box()
-        Box.label(text="CUT")
+        g = Box.grid_flow(columns=2, align=True)
+        g.label(text="CUT") 
+        g.template_icon(get_icon_value("COLOR"), scale=1.5)
+        
         g = Box.grid_flow(columns=1, align=True)
         g.prop(BDENTAL_Props, "Cutting_Tools_Types_Prop", text="Cutters")
-        
         if BDENTAL_Props.Cutting_Tools_Types_Prop == "Path Split" :
             g = Box.grid_flow(columns=2, align=True)
             g.operator("wm.bdental_curvecutteradd2", text="Add Cutter", icon="GP_SELECT_STROKES")
@@ -322,28 +333,33 @@ class BDENTAL_PT_ToolsPanel(bpy.types.Panel):
                 g.prop(obj.data, "offset", text="Offset")
 
         # Make BaseModel, survey, Blockout :
-        layout.separator()
+        # layout.separator()
+        
         Box = layout.box()
-        Box.label(text="MODEL")
         grid = Box.grid_flow(columns=2, align=True)
+        grid.label(text="MODEL")
         grid.operator("wm.bdental_model_base", text="Make Model Base")
         grid.operator("wm.bdental_undercuts_preview", text="Preview Undercuts")
+
+        grid.template_icon(get_icon_value("FILE_VOLUME"), scale=1.5)
         grid.operator("wm.bdental_add_offset", text="Add Offset")
         grid.operator("wm.bdental_blockout_new", text="Blocked Model")
         
-        layout.separator()
+        # layout.separator()
+        
         Box = layout.box()
-        row = Box.row()
-        row.prop(BDENTAL_Props, "TeethLibrary", text="Teeth Library")
-        row = Box.row()
-        row.operator("wm.bdental_add_teeth")
+        grid = Box.grid_flow(columns=2, align=True)
+        grid.label(text="TEETH")
+        grid.prop(BDENTAL_Props, "TeethLibrary", text="")
+        grid.template_icon(get_icon_value("OUTLINER_OB_LATTICE"), scale=1.5)
+        grid.operator("wm.bdental_add_teeth")
 
         Box = layout.box()
-        row = Box.row()
-        row.prop(BDENTAL_Props, "text", text="3D Text")
-        row = Box.row()
-        row.operator("wm.bdental_add_3d_text", text="Add 3D Text")
-
+        grid = Box.grid_flow(columns=2, align=True)
+        grid.label(text="TEXTE")
+        grid.prop(BDENTAL_Props, "text", text="")
+        grid.template_icon(get_icon_value("SMALL_CAPS"), scale=1.5)
+        grid.operator("wm.bdental_add_3d_text", text="Add 3D Text")
 class BDENTAL_PT_ImplantPanel(bpy.types.Panel):
     """ Implant panel"""
 
@@ -442,102 +458,57 @@ class BDENTAL_PT_Align(bpy.types.Panel):
 
     def draw(self, context):
         BDENTAL_Props = context.scene.BDENTAL_Props
-        AlignModalState = BDENTAL_Props.AlignModalState
         layout = self.layout
-
-        # Align Tools :
-        layout.separator()
         Box = layout.box()
-        row = Box.row()
-        row.label(text="Align Tools")
-
-        row = Box.row()
-        row.operator("wm.bdental_align_to_front", text="Align To Me", icon="AXIS_FRONT")
-
-        row = Box.row()
-        row.operator("wm.bdental_to_center", text="Move To Center", icon="SNAP_FACE_CENTER")
         
-        row = Box.row()
-        row.operator("wm.bdental_align_to_active", text="Align To Active")
+        g = Box.grid_flow(columns=2, align=True)
+        g.operator("wm.bdental_alignpoints", text="ALIGN")
+        g.operator("wm.bdental_alignpointsinfo", text="INFO", icon="INFO")
+
+        is_ready = context.object and context.object in context.selected_objects and len(context.selected_objects)==2
+        txt = []
+        if BDENTAL_Props.AlignModalState:
+            txt = ["WAITING FOR ALIGNEMENT..."]
+
+        elif is_ready :
+            target_name = context.object.name
+            src_name = [
+                obj
+                for obj in context.selected_objects
+                if not obj is context.object
+            ][0].name
+
+            txt = ["READY FOR ALIGNEMENT.", f"{src_name} will be aligned to, {target_name}"]
+
+        else:
+            txt = ["STANDBY MODE"]
+
+        #########################################
+        if txt :
+            b2 = Box.box()
+            b2.alert = True
+
+            for t in txt :
+                b2.label(text=t)
+        
+        # Align Tools :
+        box = layout.box()
+        g = box.grid_flow(columns=3, align=True)
+        g.operator("wm.bdental_align_to_front", text="Align To Me", icon="AXIS_FRONT")
+        g.operator("wm.bdental_to_center", text="Move To Center", icon="SNAP_FACE_CENTER")
+        g.operator("wm.bdental_align_to_active", text="Align To Active")
         
         # row.operator("wm.bdental_align_to_cursor", text="Move To Cursor", icon="AXIS_FRONT")
         
-        
-        split = Box.split(factor=2 / 3, align=False)
-        col = split.column()
-        row = col.row()
-        row.operator("wm.bdental_occlusalplane", text="OCCLUSAL PLANE")
-        col = split.column()
-        row = col.row()
-        row.alert = True
-        row.operator("wm.bdental_occlusalplaneinfo", text="INFO", icon="INFO")
+        g = box.grid_flow(columns=2, align=True)
+        g.operator("wm.bdental_occlusalplane", text="OCCLUSAL PLANE")
+        g.operator("wm.bdental_occlusalplaneinfo", text="INFO", icon="INFO")
 
         #Auto align :
         # box = layout.box()
         # row = box.row()
         # row.operator("wm.bdental_auto_align_icp", text="AUTO ALIGN")
 
-        # Align Points and ICP :
-        split = layout.split(factor=2 / 3, align=False)
-        col = split.column()
-        row = col.row()
-        row.operator("wm.bdental_alignpoints", text="ALIGN")
-        col = split.column()
-        row = col.row()
-        row.alert = True
-        row.operator("wm.bdental_alignpointsinfo", text="INFO", icon="INFO")
-
-        Condition_1 = len(bpy.context.selected_objects) != 2
-        Condition_2 = bpy.context.selected_objects and not bpy.context.active_object
-        Condition_3 = bpy.context.selected_objects and not (
-            bpy.context.active_object in bpy.context.selected_objects
-        )
-        Condition_4 = not bpy.context.active_object in bpy.context.visible_objects
-
-        Conditions = Condition_1 or Condition_2 or Condition_3 or Condition_4
-        if AlignModalState:
-            self.AlignLabels = "MODAL"
-        else:
-            if Conditions:
-                self.AlignLabels = "INVALID"
-
-            else:
-                self.AlignLabels = "READY"
-
-        #########################################
-
-        if self.AlignLabels == "READY":
-            TargetObjectName = context.active_object.name
-            SourceObjectName = [
-                obj
-                for obj in bpy.context.selected_objects
-                if not obj is bpy.context.active_object
-            ][0].name
-
-            box = layout.box()
-
-            row = box.row()
-            row.alert = True
-            row.alignment = "EXPAND"
-            row.label(text="READY FOR ALIGNEMENT.")
-
-            row = box.row()
-            row.alignment = "EXPAND"
-            row.label(text=f"{SourceObjectName} will be aligned to, {TargetObjectName}")
-
-        if self.AlignLabels == "INVALID" or self.AlignLabels == "NOTREADY":
-            box = layout.box()
-            row = box.row(align=True)
-            row.alert = True
-            row.alignment = "EXPAND"
-            row.label(text="STANDBY MODE", icon="ERROR")
-
-        if self.AlignLabels == "MODAL":
-            box = layout.box()
-            row = box.row()
-            row.alert = True
-            row.alignment = "EXPAND"
-            row.label(text="WAITING FOR ALIGNEMENT...")
 
 ##########################################################################################
 # Registration :

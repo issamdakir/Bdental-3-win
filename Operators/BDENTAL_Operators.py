@@ -7877,13 +7877,15 @@ class BDENTAL_OT_retopo_smooth(bpy.types.Operator):
 
 
     def execute(self, context):
+        obj = context.object
+        if obj.mode == "SCULPT" :
+            bpy.ops.object.mode_set(mode="OBJECT")
+            return {"FINISHED"}
+
 
         # Prepare scene settings :
         bpy.context.tool_settings.mesh_select_mode = (True, False, False)
-
         bpy.ops.object.mode_set(mode="SCULPT")
-
-        obj = context.object
 
         context.scene.tool_settings.sculpt.use_symmetry_x = False
         context.scene.tool_settings.unified_paint_settings.size = 50

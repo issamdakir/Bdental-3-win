@@ -37,6 +37,7 @@ from vtk.util import numpy_support
 from vtk import vtkCommand
 import webbrowser
 _IMAGE3D = None
+_PREFFIX=None
 
 # import open3d as o3d
 
@@ -2812,6 +2813,7 @@ def AddSlices(Preffix, DcmInfo, SlicesDir):
 @persistent
 def BDENTAL_SliceUpdate(scene):
     global _IMAGE3D
+    global _PREFFIX
     ActiveObject = bpy.context.object
     
    
@@ -2820,10 +2822,11 @@ def BDENTAL_SliceUpdate(scene):
     if _need_update :
         BDENTAL_Props = scene.BDENTAL_Props
         Preffix = scene.get("volume_preffix")
-        if not _IMAGE3D :
+        if not _IMAGE3D or _PREFFIX != Preffix:
             DcmInfoDict = eval(BDENTAL_Props.DcmInfo)
             DcmInfo = DcmInfoDict[Preffix]
             _IMAGE3D = sitk.ReadImage(AbsPath(DcmInfo["Nrrd255Path"]))
+            _PREFFIX = Preffix
         Image3D_255 = _IMAGE3D
             
         SlicesDir = BDENTAL_Props.SlicesDir
