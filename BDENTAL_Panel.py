@@ -211,11 +211,11 @@ class BDENTAL_PT_ToolsPanel(bpy.types.Panel):
         BDENTAL_Props = context.scene.BDENTAL_Props
         layout = self.layout
         ob = context.object
-        mat = ob.active_material
+        
         # Model color :
         if ob and ob.type in ["MESH", "CURVE"]:
             try :
-                
+                mat = ob.active_material
                 Box = layout.box()
                 
                 grid = Box.grid_flow(columns=2, align=True)
