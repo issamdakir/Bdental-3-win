@@ -696,7 +696,7 @@ if exists(new_modules) :
 
     shutil.move(new_modules, ADDON_DIR)
 
-
+add_bdental_libray()
 
 if not exists(BDENTAL_MODULES) :
     ERROR_PANEL = True
