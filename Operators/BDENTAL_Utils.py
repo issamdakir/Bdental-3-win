@@ -189,7 +189,11 @@ def reset_config_folder():
 
 def start_blender_session():
     print(f"binary path : {bpy.app.binary_path}")
-    os.system(f'"{bpy.app.binary_path}"')
+    filepath = join(addon_dir, "Operators", "add_bdental_asset_library.py")
+    _cmd = f'{bpy.app.binary_path} -P "{filepath}"'
+    # _cmd = f'{bpy.app.binary_path}'
+    print(f"_cmd : {_cmd}")
+    os.system(_cmd)
 
 
 # max radius in meters (=5mm)
@@ -1969,7 +1973,7 @@ def PointsToRefPlanes(ctx, Model, RefPointsList, color, CollName=None):
 
     mat.use_nodes = True
     mat.node_tree.nodes["Principled BSDF"].inputs[0].default_value = color
-    mat.node_tree.nodes["Principled BSDF"].inputs[19].default_value = 0.5
+    mat.node_tree.nodes["Principled BSDF"].inputs[21].default_value = 0.5
     mat.blend_method = "BLEND"
 
     if CollName:

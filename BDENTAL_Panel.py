@@ -219,14 +219,20 @@ class BDENTAL_PT_ToolsPanel(bpy.types.Panel):
                 Box = layout.box()
                 
                 grid = Box.grid_flow(columns=2, align=True)
-                grid.label(text="COLOR")#icon=yellow_point
-                # grid.operator("wm.bdental_add_color", text="Add Color", icon="MATERIAL")
-                grid.template_ID(context.object, "active_material",new="material.new",live_icon=0)
+                
                 if mat :
                     grid.prop(mat, "diffuse_color", text="")
-                    grid.operator("wm.bdental_remove_color", text="Remove Color")
                 else :
                     grid.template_icon(get_icon_value("COLORSET_12_VEC"), scale=1.5)
+                grid.label(text="COLOR")#icon=yellow_point
+                
+
+                grid = Box.grid_flow(columns=2, align=True)
+                grid.operator("wm.bdental_add_color", text="Add Color", icon="MATERIAL")
+                # grid.template_ID(context.object, "active_material",new="material.new",live_icon=0)
+                if mat :
+                    grid.operator("wm.bdental_remove_color", text="Remove Color")
+                else :
                     grid.operator("wm.bdental_remove_color", text="Remove Color")
             except :
                 pass
@@ -234,11 +240,14 @@ class BDENTAL_PT_ToolsPanel(bpy.types.Panel):
         Box = layout.box()
         grid = Box.grid_flow(columns=2, align=True)
         grid.label(text="RELATIONS")
+        grid.template_icon(get_icon_value("LINKED"), scale=1.5)
+
+        grid = Box.grid_flow(columns=2, align=True)
         grid.operator("wm.bdental_parent_object", text="Parent", icon="LINKED")
         grid.operator("wm.bdental_join_objects", text="Join", icon="SNAP_FACE")
         grid.operator("wm.bdental_lock_objects", text="Lock", icon="LOCKED")
 
-        grid.template_icon(get_icon_value("LINKED"), scale=1.5)
+        
         grid.operator("wm.bdental_unparent_objects", text="Un-Parent", icon="LIBRARY_DATA_OVERRIDE")
         grid.operator("wm.bdental_separate_objects", text="Separate", icon="SNAP_VERTEX")
         grid.operator("wm.bdental_unlock_objects", text="Un-Lock", icon="UNLOCKED")
@@ -249,12 +258,15 @@ class BDENTAL_PT_ToolsPanel(bpy.types.Panel):
         Box = layout.box()
         grid = Box.grid_flow(columns=2, align=True)
         grid.label(text="REPAIR")  
+        grid.template_icon(get_icon_value("TOOL_SETTINGS"), scale=1.5)
+
+        grid = Box.grid_flow(columns=2, align=True)
+
         grid.operator("wm.bdental_decimate", text="Decimate", icon="MOD_DECIM")
         grid.operator("wm.bdental_clean_mesh2", text="Clean Mesh", icon="BRUSH_DATA")
         grid.operator("wm.bdental_retopo_smooth", text="Retopo-Smooth", icon="SMOOTHCURVE")
         grid.operator("wm.bdental_normals_toggle")
 
-        grid.template_icon(get_icon_value("TOOL_SETTINGS"), scale=1.5)
         grid.prop(BDENTAL_Props, "decimate_ratio", text="")
         grid.operator("wm.bdental_voxelremesh", text="Remesh", icon="MOD_REMESH")
         if ob and ob.mode == "SCULPT":
@@ -338,10 +350,13 @@ class BDENTAL_PT_ToolsPanel(bpy.types.Panel):
         Box = layout.box()
         grid = Box.grid_flow(columns=2, align=True)
         grid.label(text="MODEL")
+        grid.template_icon(get_icon_value("FILE_VOLUME"), scale=1.5)
+
+        grid = Box.grid_flow(columns=2, align=True)
+
         grid.operator("wm.bdental_model_base", text="Make Model Base")
         grid.operator("wm.bdental_undercuts_preview", text="Preview Undercuts")
 
-        grid.template_icon(get_icon_value("FILE_VOLUME"), scale=1.5)
         grid.operator("wm.bdental_add_offset", text="Add Offset")
         grid.operator("wm.bdental_blockout_new", text="Blocked Model")
         
@@ -350,16 +365,21 @@ class BDENTAL_PT_ToolsPanel(bpy.types.Panel):
         Box = layout.box()
         grid = Box.grid_flow(columns=2, align=True)
         grid.label(text="TEETH")
-        grid.prop(BDENTAL_Props, "TeethLibrary", text="")
         grid.template_icon(get_icon_value("OUTLINER_OB_LATTICE"), scale=1.5)
+
+        grid = Box.grid_flow(columns=2, align=True)
+        grid.prop(BDENTAL_Props, "TeethLibrary", text="")
         grid.operator("wm.bdental_add_teeth")
 
         Box = layout.box()
         grid = Box.grid_flow(columns=2, align=True)
         grid.label(text="TEXTE")
-        grid.prop(BDENTAL_Props, "text", text="")
         grid.template_icon(get_icon_value("SMALL_CAPS"), scale=1.5)
+
+        grid = Box.grid_flow(columns=2, align=True)
+        grid.prop(BDENTAL_Props, "text", text="")
         grid.operator("wm.bdental_add_3d_text", text="Add 3D Text")
+
 class BDENTAL_PT_ImplantPanel(bpy.types.Panel):
     """ Implant panel"""
 
@@ -504,6 +524,8 @@ class BDENTAL_PT_Align(bpy.types.Panel):
         g.operator("wm.bdental_occlusalplane", text="OCCLUSAL PLANE")
         g.operator("wm.bdental_occlusalplaneinfo", text="INFO", icon="INFO")
 
+        g = box.grid_flow(columns=2, align=True)
+        g.operator("wm.bdental_add_reference_planes", text="Ref planes")
         #Auto align :
         # box = layout.box()
         # row = box.row()

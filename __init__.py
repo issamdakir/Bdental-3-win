@@ -294,6 +294,7 @@ import gpu
 from gpu_extras.batch import batch_for_shader
 import blf
 import tempfile
+from glob import glob
 
 if sys.platform == "win32":
     sys.stdout.reconfigure(
@@ -316,6 +317,10 @@ ERROR_PANEL = False
 ERROR_MESSAGE = []
 ADDON_DIR = dirname(abspath(__file__))
 RESOURCES = join(ADDON_DIR, "Resources")
+BDENTAL_LIBRARY_PATH = join(RESOURCES, "Bdental_Library")
+# user_lib = bpy.context.preferences.filepaths.asset_libraries.get('Bdental Library')
+# if user_lib :
+#     user_lib.path = BDENTAL_LIBRARY_PATH
 ADDON_VER_PATH = join(RESOURCES, "BDENTAL_Version.txt")
 ADDON_VER_DATE = "  "
 
@@ -328,6 +333,17 @@ BDENTAL_MODULES = join(ADDON_DIR, "bdental_modules")
 sys.path.insert(0,BDENTAL_MODULES)
 # BDENTAL_MODULES_ZIP = join(RESOURCES, "bdental_modules.zip")
 #############################################################
+def add_bdental_libray():
+    lib_archive_dir_path = join(BDENTAL_LIBRARY_PATH, "lib_archive")
+    if exists(lib_archive_dir_path) :
+        zip_files = glob(join(lib_archive_dir_path, "*.zip"))
+        if zip_files :
+            for f in zip_files :
+                with zipfile.ZipFile(f, 'r') as zip_ref:
+                    zip_ref.extractall(BDENTAL_LIBRARY_PATH)
+        shutil.rmtree(lib_archive_dir_path)
+
+    return
 def ImportReq(REQ_DICT):
     Pkgs = []
     for mod, pkg in REQ_DICT.items():

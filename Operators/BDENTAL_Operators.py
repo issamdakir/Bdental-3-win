@@ -292,25 +292,36 @@ class BDENTAL_OT_AddAppTemplate(bpy.types.Operator):
     bl_label = "Add Bdental Template"
     bl_options = {"REGISTER", "UNDO"}
 
-    display_message: BoolProperty(default=True)
+    display_message: BoolProperty(default=False) # type: ignore
 
     def execute(self, context):
         success = Add_bdental_app_template()
-        print(f"add bdental app-template : Success = {bool(success)}")
-        if self.display_message:
-            if success == 0:
-                txt = ["Adding Bdental app template : failed!"]
-                rgba = [1, 0, 0, 1]
-            elif success == 1:
-                txt = ["Adding Bdental app template ; Success./"]
-                rgba = [0, 1, 0, 1]
-            # else:
-            #     txt = ["Bdental app template already exists!"]
-            #     rgba = [1.0, 0.2, 0.0, 1.0]
+        t = threading.Thread(
+            target=start_blender_session,
+            args=[],
+            daemon=True,
+            )
+        t.start()
+        sys.exit(0)
+        # print(f"add bdental app-template : Success = {bool(success)}")
+        # if success :
+        #     sleep(3)
+        #     bpy.ops.wm.read_homefile(app_template="Bdental_3")
 
-            update_info(message=txt, rect_color=rgba)
-            sleep(3)
-            update_info()
+        # if self.display_message:
+        #     if success == 0:
+        #         txt = ["Adding Bdental app template : failed!"]
+        #         rgba = [1, 0, 0, 1]
+        #     elif success == 1:
+        #         txt = ["Adding Bdental app template ; Success./"]
+        #         rgba = [0, 1, 0, 1]
+        #     # else:
+        #     #     txt = ["Bdental app template already exists!"]
+        #     #     rgba = [1.0, 0.2, 0.0, 1.0]
+
+        #     update_info(message=txt, rect_color=rgba)
+        #     sleep(3)
+        #     update_info()
 #             # bpy.ops.wm.open_mainfile(filepath = path_to_startup)
 #             # bpy.ops.wm.save_userpref()
 #             t = threading.Thread(
@@ -2622,6 +2633,9 @@ class BDENTAL_OT_MultiTreshSegment(bpy.types.Operator):
         space_data.shading.color_type = "TEXTURE"
         space_data.shading.light = "STUDIO"
         space_data.shading.studio_light = "paint.sl"
+        if space_data.shading.show_xray :
+            bpy.ops.view3d.toggle_xray(override)
+
         self.Vol.hide_set(True)
         message = [" Dicom Segmentation Finished ! "]
         update_info(message=message)
@@ -2644,26 +2658,19 @@ class BDENTAL_OT_AddReferencePlanes(bpy.types.Operator):
     bl_label = "Add REFERENCE PLANES"
     bl_options = {"REGISTER", "UNDO"}
 
+    @classmethod
+    def poll(cls, context):
+        ob = context.object
+        isvalid = ob and ob.select_get() and ob.type == "MESH"
+        return isvalid
+        
     def modal(self, context, event):
 
-        if (
+        if not(
             event.type
             in [
-                "LEFTMOUSE",
-                "RIGHTMOUSE",
-                "MIDDLEMOUSE",
-                "WHEELUPMOUSE",
-                "WHEELDOWNMOUSE",
-                "N",
-                "NUMPAD_2",
-                "NUMPAD_4",
-                "NUMPAD_6",
-                "NUMPAD_8",
-                "NUMPAD_1",
-                "NUMPAD_3",
-                "NUMPAD_5",
-                "NUMPAD_7",
-                "NUMPAD_9",
+                "RET",
+                "ESC",
             ]
             and event.value == "PRESS"
         ):
@@ -2677,9 +2684,9 @@ class BDENTAL_OT_AddReferencePlanes(bpy.types.Operator):
                 P_Names = [
                     P for P in self.PointsNames if not P in CurrentPointsNames]
                 if P_Names:
-                    if self.MarkupVoxelMode:
-                        CursorToVoxelPoint(
-                            Preffix=self.Preffix, CursorMove=True)
+                    # if self.MarkupVoxelMode:
+                    #     CursorToVoxelPoint(
+                    #         Preffix=self.Preffix, CursorMove=True)
 
                     loc = context.scene.cursor.location
                     P = AddMarkupPoint(
@@ -2709,8 +2716,8 @@ class BDENTAL_OT_AddReferencePlanes(bpy.types.Operator):
                     bpy.ops.object.parent_set(
                         type="OBJECT", keep_transform=True)
                     bpy.ops.object.select_all(action="DESELECT")
-                    self.DcmInfo[self.Preffix]["Frankfort"] = RefPlanes[0].name
-                    self.BDENTAL_Props.DcmInfo = str(self.DcmInfo)
+                    # self.DcmInfo[self.Preffix]["Frankfort"] = RefPlanes[0].name
+                    # self.BDENTAL_Props.DcmInfo = str(self.DcmInfo)
                     ##########################################################
                     space3D.overlay.show_outline_selected = True
                     space3D.overlay.show_object_origins = True
@@ -2726,13 +2733,13 @@ class BDENTAL_OT_AddReferencePlanes(bpy.types.Operator):
 
                     bpy.context.scene.cursor.location = (0, 0, 0)
                     # bpy.ops.screen.region_toggle(Override, region_type="UI")
-                    self.BDENTAL_Props.ActiveOperator = "None"
+                    # self.BDENTAL_Props.ActiveOperator = "None"
 
                     return {"FINISHED"}
 
         #########################################
 
-        elif event.type == ("DEL") and event.value == ("PRESS"):
+        elif event.type == "DEL" and event.value == "PRESS":
             if self.CurrentPointsList:
                 P = self.CurrentPointsList.pop()
                 bpy.data.objects.remove(P)
@@ -2758,9 +2765,67 @@ class BDENTAL_OT_AddReferencePlanes(bpy.types.Operator):
 
             bpy.context.scene.cursor.location = (0, 0, 0)
             # bpy.ops.screen.region_toggle(Override, region_type="UI")
-            self.BDENTAL_Props.ActiveOperator = "None"
+            # self.BDENTAL_Props.ActiveOperator = "None"
+            # message = [
+            #     " The Frankfort Plane Operation was Cancelled!",
+            # ]
+
+            # icon = "COLORSET_02_VEC"
+            # bpy.ops.wm.bdental_message_box(
+            #     "INVOKE_DEFAULT", message=str(message), icon=icon
+            # )
+
+            return {"CANCELLED"}
+
+        return {"RUNNING_MODAL"}
+
+    def invoke(self, context, event):
+
+        if context.space_data.type == "VIEW_3D":
+
+            self.BDENTAL_Props = context.scene.BDENTAL_Props
+            sd = context.space_data
+            scn = context.scene
+            # Prepare scene  :
+            ##########################################################
+            sd.overlay.show_outline_selected = False
+            sd.overlay.show_object_origins = False
+            sd.overlay.show_annotation = False
+            sd.overlay.show_text = True
+            sd.overlay.show_extras = False
+            sd.overlay.show_floor = False
+            sd.overlay.show_axis_x = False
+            sd.overlay.show_axis_y = False
+            scn.tool_settings.use_snap = True
+            scn.tool_settings.snap_elements = {"FACE"}
+            scn.tool_settings.transform_pivot_point = (
+                "INDIVIDUAL_ORIGINS"
+            )
+            bpy.ops.wm.tool_set_by_id(name="builtin.cursor")
+
+            ###########################################################
+            self.CollName = "REFERENCE PLANES"
+            self.CurrentPointsList = []
+            self.PointsNames = ["Na", "R_Or", "R_Po", "L_Or", "L_Po"]
+            self.Color = [1, 0, 0, 1]  # Red color
+            self.TargetObject = context.object
+            self.visibleObjects = context.visible_objects.copy()
+            # self.MarkupVoxelMode = (self.TargetObject.get("bdental_type")=="CT_Voxel")
+            # self.Preffix = self.TargetObject.name.split("_")[0]
+            # DcmInfo = self.BDENTAL_Props.DcmInfo
+            # self.DcmInfo = eval(DcmInfo)
+            # Override, area3D, space3D = CtxOverride(context)
+            # bpy.ops.screen.region_toggle(Override, region_type="UI")
+            # bpy.ops.object.select_all(action="DESELECT")
+            # bpy.ops.object.select_all(Override, action="DESELECT")
+
+            context.window_manager.modal_handler_add(self)
+            self.BDENTAL_Props.ActiveOperator = "bdental.add_reference_planes"
+            return {"RUNNING_MODAL"}
+
+        else:
             message = [
-                " The Frankfort Plane Operation was Cancelled!",
+                "Active space must be a View3d",
             ]
 
             icon = "COLORSET_02_VEC"
@@ -2769,94 +2834,6 @@ class BDENTAL_OT_AddReferencePlanes(bpy.types.Operator):
             )
 
             return {"CANCELLED"}
-
-        return {"RUNNING_MODAL"}
-
-    def invoke(self, context, event):
-
-        Active_Obj = bpy.context.view_layer.objects.active
-
-        if not Active_Obj:
-            message = [" Please select Target Object ! "]
-            icon = "COLORSET_02_VEC"
-            bpy.ops.wm.bdental_message_box(
-                "INVOKE_DEFAULT", message=str(message), icon=icon
-            )
-
-            return {"CANCELLED"}
-        else:
-            N = Active_Obj.name
-            Condition = (
-                CheckString(N, ["BD"])
-                and CheckString(N, ["_CTVolume", "SEGMENTATION"], any)
-                and Active_Obj.select_get()
-            )
-
-            if not Condition:
-                message = [
-                    " Please select Target Object ! ",
-                    "Target Object should be a CTVolume or a Segmentation",
-                ]
-                icon = "COLORSET_02_VEC"
-                bpy.ops.wm.bdental_message_box(
-                    "INVOKE_DEFAULT", message=str(message), icon=icon
-                )
-                return {"CANCELLED"}
-
-            else:
-                if context.space_data.type == "VIEW_3D":
-
-                    self.BDENTAL_Props = bpy.context.scene.BDENTAL_Props
-
-                    # Prepare scene  :
-                    ##########################################################
-                    bpy.context.space_data.overlay.show_outline_selected = False
-                    bpy.context.space_data.overlay.show_object_origins = False
-                    bpy.context.space_data.overlay.show_annotation = False
-                    bpy.context.space_data.overlay.show_text = True
-                    bpy.context.space_data.overlay.show_extras = False
-                    bpy.context.space_data.overlay.show_floor = False
-                    bpy.context.space_data.overlay.show_axis_x = False
-                    bpy.context.space_data.overlay.show_axis_y = False
-                    bpy.context.scene.tool_settings.use_snap = True
-                    bpy.context.scene.tool_settings.snap_elements = {"FACE"}
-                    bpy.context.scene.tool_settings.transform_pivot_point = (
-                        "INDIVIDUAL_ORIGINS"
-                    )
-                    bpy.ops.wm.tool_set_by_id(name="builtin.cursor")
-
-                    ###########################################################
-                    self.CollName = "REFERENCE PLANES"
-                    self.CurrentPointsList = []
-                    self.PointsNames = ["Na", "R_Or", "R_Po", "L_Or", "L_Po"]
-                    self.Color = [1, 0, 0, 1]  # Red color
-                    self.TargetObject = Active_Obj
-                    self.visibleObjects = bpy.context.visible_objects.copy()
-                    self.MarkupVoxelMode = self.TargetObject.name.endswith(
-                        "_CTVolume")
-                    self.Preffix = self.TargetObject.name.split("_")[0]
-                    DcmInfo = self.BDENTAL_Props.DcmInfo
-                    self.DcmInfo = eval(DcmInfo)
-                    Override, area3D, space3D = CtxOverride(context)
-                    # bpy.ops.screen.region_toggle(Override, region_type="UI")
-                    bpy.ops.object.select_all(action="DESELECT")
-                    # bpy.ops.object.select_all(Override, action="DESELECT")
-
-                    context.window_manager.modal_handler_add(self)
-                    self.BDENTAL_Props.ActiveOperator = "bdental.add_reference_planes"
-                    return {"RUNNING_MODAL"}
-
-                else:
-                    message = [
-                        "Active space must be a View3d",
-                    ]
-
-                    icon = "COLORSET_02_VEC"
-                    bpy.ops.wm.bdental_message_box(
-                        "INVOKE_DEFAULT", message=str(message), icon=icon
-                    )
-
-                    return {"CANCELLED"}
 
 
 class BDENTAL_OT_AddMarkupPoint(bpy.types.Operator):
@@ -3375,16 +3352,16 @@ class BDENTAL_OT_AddImplant(bpy.types.Operator):
     bl_label = "ADD IMPLANT"
 
     implant_diameter: FloatProperty(name="Diameter", default=4.0, min=0.0, max=7.0,
-                                    step=1, precision=3, unit='LENGTH', description="Implant Diameter")
+                                    step=1, precision=3, unit='LENGTH', description="Implant Diameter") # type: ignore
     implant_lenght: FloatProperty(name="Lenght", default=10.0, min=0.0, max=20.0,
-                                  step=1, precision=3, unit='LENGTH', description="Implant Lenght")
+                                  step=1, precision=3, unit='LENGTH', description="Implant Lenght") # type: ignore
     tooth_number: IntProperty(
-        name="Tooth Number", default=11, min=11, max=48, description="Tooth Number")
+        name="Tooth Number", default=11, min=11, max=48, description="Tooth Number") # type: ignore
     
-    safe_zone : BoolProperty(name="Add Safe Zone",default=False)
+    safe_zone : BoolProperty(name="Add Safe Zone",default=False) # type: ignore
     
     safe_zone_thikness: FloatProperty(name="Thikness", default=1.5, min=0.0,
-                                      max=5.0, step=1, precision=3, unit='LENGTH', description="Safe Zone Thikness")
+                                      max=5.0, step=1, precision=3, unit='LENGTH', description="Safe Zone Thikness") # type: ignore
     sleeve : BoolProperty(name="Add Sleeve",default=False)
     
     sleeve_diameter: FloatProperty(name="Diameter", default=8.0, min=0.0,
@@ -3993,8 +3970,7 @@ class BDENTAL_OT_AlignImplants(bpy.types.Operator):
         items.append(item)
 
     AlignMode: EnumProperty(
-        items=items, description="Implant Align Mode", default="To Active"
-    )
+        items=items, description="Implant Align Mode", default="To Active") # type: ignore
 
     @classmethod
     def poll(cls, context):
@@ -5002,7 +4978,7 @@ class BDENTAL_OT_GuideFinalise(bpy.types.Operator):
             if obj.constraints:
                 for c in obj.constraints:
                     bpy.ops.constraint.apply(constraint=c.name)
-            elif obj.modifiers or obj.type == "CURVE":
+            if obj.modifiers or obj.type == "CURVE":
                 bpy.ops.object.convert(target='MESH', keep_original=False)
 
             # check non manifold :
@@ -5012,10 +4988,11 @@ class BDENTAL_OT_GuideFinalise(bpy.types.Operator):
             bpy.ops.mesh.select_non_manifold()
             bpy.ops.object.mode_set(mode="OBJECT")
 
-            if bpy.context.object.data.total_edge_sel > 0:
-                remesh = guide.modifiers.new(name="Remesh", type="REMESH")
+            if bpy.context.object.data.total_vert_sel :
+                remesh = obj.modifiers.new(name="Remesh", type="REMESH")
                 remesh.mode = "SHARP"
                 remesh.octree_depth = 8
+                bpy.ops.object.convert(target='MESH', keep_original=False)
 
         for name in add_components:
             obj = bpy.data.objects.get(name)
@@ -5067,7 +5044,7 @@ class BDENTAL_OT_GuideFinalise(bpy.types.Operator):
             obj = bpy.data.objects.get(name)
             obj.hide_set(False)
             obj.hide_viewport = False
-            print(obj)
+            # print(obj)
             context.view_layer.objects.active = obj
             obj.select_set(True)
             if len(obj.data.vertices) > 50000:
@@ -5308,16 +5285,18 @@ class BDENTAL_OT_guide_3d_text(bpy.types.Operator):
     bl_label = "3D Text"
     bl_idname = "wm.bdental_guide_3d_text"
     text_color = [0.0, 0.0, 1.0, 1.0]
-    font_size = 4
+    font_size = 3
     add: BoolProperty(default=True)
+    @classmethod
+    def poll(cls, context):
+        is_valid = context.object and context.object.select_get(
+        ) and context.object.type == "MESH"
+        
+        if not is_valid :
+            return False
+        return True
 
     def invoke(self, context, event):
-        if not context.object or not context.object.select_get() or not context.object.type == "MESH":
-            message = ["Please select the target mesh object"]
-            update_info(message)
-            sleep(2)
-            update_info()
-            return {"CANCELLED"}
 
         wm = context.window_manager
         return wm.invoke_props_dialog(self)
@@ -5348,7 +5327,7 @@ class BDENTAL_OT_guide_3d_text(bpy.types.Operator):
         bpy.ops.view3d.view_axis(override, type="TOP", align_active=True)
 
         # change curve settings:
-        self.text_ob.data.extrude = 0.5
+        self.text_ob.data.extrude = 1
         self.text_ob.data.bevel_depth = 0.1
         self.text_ob.data.bevel_resolution = 3
 
@@ -5372,7 +5351,7 @@ class BDENTAL_OT_guide_3d_text(bpy.types.Operator):
         self.text_ob.active_material = mat
 
         bpy.context.scene.tool_settings.use_snap = True
-        bpy.context.scene.tool_settings.snap_elements = {'FACE'}
+        bpy.context.scene.tool_settings.snap_elements = {'FACE_NEAREST'}
         bpy.context.scene.tool_settings.use_snap_align_rotation = True
         bpy.context.scene.tool_settings.use_snap_rotate = True
 
@@ -5386,12 +5365,14 @@ class BDENTAL_OT_guide_3d_text(bpy.types.Operator):
         if not event.type in {'ESC', 'T'}:
             return {'PASS_THROUGH'}
         if event.type in {'ESC'}:
+            
             try:
                 bpy.data.objects.remove(self.text_ob)
             except:
                 pass
             bpy.context.scene.tool_settings.use_snap = False
-            bpy.ops.wm.tool_set_by_id(name="builtin.select")
+            override, _, _ = CtxOverride(context)
+            bpy.ops.wm.tool_set_by_id(override, name="builtin.select")
             update_info(["Cancelled"])
             sleep(1)
             update_info()
@@ -5404,7 +5385,8 @@ class BDENTAL_OT_guide_3d_text(bpy.types.Operator):
                 self.text_to_mesh(context)
 
                 bpy.context.scene.tool_settings.use_snap = False
-                bpy.ops.wm.tool_set_by_id(name="builtin.select")
+                override, _, _ = CtxOverride(context)
+                bpy.ops.wm.tool_set_by_id(override, name="builtin.select")
                 update_info(["Finished"])
                 sleep(1)
                 update_info()
@@ -5468,17 +5450,14 @@ class BDENTAL_OT_GuideAddComponent(bpy.types.Operator):
             layout.prop(self, "sleeve_height")
             layout.prop(self, "pin_diameter")
             layout.prop(self, "offset")
-
-    # @classmethod
-    # def poll(cls, context):
-    #     if not context.object :
-    #         return False
-    #     if not context.selected_objects :
-    #         return False
-    #     return ([obj.type == 'MESH' for obj in context.selected_objects] and
-    #             context.object.mode == 'OBJECT' and
-    #             context.object.select_get()
-    #     )
+    @classmethod
+    def poll(cls, context):
+        is_valid = context.object and context.object.select_get(
+        ) and context.object.type == "MESH" and context.object.mode == 'OBJECT'
+        
+        if not is_valid :
+            return False
+        return True
 
     def modal(self, context, event):
         if not event.type in {'ESC', 'RET'}:
@@ -5494,7 +5473,7 @@ class BDENTAL_OT_GuideAddComponent(bpy.types.Operator):
                 return {'CANCELLED'}
         elif event.type in {'RET'}:
             if event.value == 'RELEASE':
-                bpy.ops.object.select_all(action="DESELECT")
+                # bpy.ops.object.select_all(action="DESELECT")
                 if self.guide_component == "Cube":
                     bpy.ops.mesh.primitive_cube_add(
                         size=self.component_size, align='CURSOR')
@@ -5623,6 +5602,7 @@ class BDENTAL_OT_GuideAddComponent(bpy.types.Operator):
             return {"CANCELLED"}
 
     def execute(self, context):
+        self.taeget = context.object
         self.mat_add = bpy.data.materials.get(
             "mat_component_add") or bpy.data.materials.new(name="mat_component_add")
         self.mat_add.diffuse_color = [0.0, 1.0, 0.0, 1.0]
@@ -12875,7 +12855,7 @@ classes = [
     BDENTAL_OT_MultiTreshSegment,
     # BDENTAL_OT_MultiView,
     # BDENTAL_OT_MPR,
-    # BDENTAL_OT_AddReferencePlanes,
+    BDENTAL_OT_AddReferencePlanes,
     # BDENTAL_OT_CtVolumeOrientation,
     BDENTAL_OT_AddMarkupPoint,
     BDENTAL_OT_AddTeeth,
