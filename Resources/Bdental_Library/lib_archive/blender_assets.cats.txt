@@ -1,0 +1,24 @@
+# This is an Asset Catalog Definition file for Blender.
+#
+# Empty lines and lines starting with `#` will be ignored.
+# The first non-ignored line should be the version indicator.
+# Other lines are of the format "UUID:catalog/path/for/assets:simple catalog name"
+
+VERSION 1
+
+09b38d0b-963e-4d8f-8558-66085a9fc8c9:Implant Abutments:Implant Abutments
+3a53ea4e-ecf5-40ae-913e-c3eece943f5c:Implant Abutments/MUA:Implant Abutments-MUA
+7506172a-efc5-4e52-a52f-f296b58a4e51:Implant Abutments/MUA/0° Straight:Implant Abutments-MUA-0° Straight
+156188ca-25ff-46cb-b20e-8d571883f06c:Implant Abutments/MUA/17° Angulated:Implant Abutments-MUA-17° Angulated
+b5cfa463-67a0-49cf-a38b-c721f7376f52:Implant Abutments/MUA/17° Angulated:Implant Abutments-MUA-17° Angulated
+d093a56a-c159-4fb4-a684-238b528711f9:Implant Abutments/MUA/30° Angulated:Implant Abutments-MUA-30° Angulated
+fd4eb96d-7640-46aa-b7b3-b540e154b7eb:Implant Abutments/MUA/45° Angulated:Implant Abutments-MUA-45° Angulated
+96954b75-b75f-473e-a668-d8fd70c9d5c3:Implant Abutments/Screws:Implant Abutments-Screws
+75c36718-55cb-43a5-9854-a0b5419b16fe:Implant Abutments/Screws/Rosen:Implant Abutments-Screws-Rosen
+b7030219-9ec1-4144-b581-0332b9b269da:Implant Abutments/Screws/XG-Force:Implant Abutments-Screws-XG-Force
+b395a9e9-a824-4082-b0e3-f6b97eedabae:Ortopedic:Ortopedic
+686456b8-64da-4c55-8791-af02b5dcf105:Sleeve cutter:Sleeve cutter
+0c413245-53e3-4ddf-b56b-e99560522c62:Teeth:Teeth
+4f9a359e-6133-4101-8496-c56e335b07a6:Teeth/0_CHRISTIAN BRENES teeth library:Teeth-0_CHRISTIAN BRENES teeth library
+30b6210e-f795-4a5b-9318-e90e0c4a60da:Teeth/0_CHRISTIAN BRENES teeth library/1 Up:Teeth-0_CHRISTIAN BRENES teeth library-1 Up
+ebd67c5f-3f88-43d7-b123-65154ab85b22:Teeth/0_CHRISTIAN BRENES teeth library/2 Low:Teeth-0_CHRISTIAN BRENES teeth library-2 Low
