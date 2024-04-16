@@ -2186,12 +2186,11 @@ class BDENTAL_OT_AddSlices(bpy.types.Operator):
 
     def execute(self, context):
         is_update = False
-        context.window.workspace = bpy.data.workspaces["Bdental Slicer"]
         Vol = context.object
-        message = [
-            " Generating MPR Slices views ... ",
-        ]
-        update_info(message)
+        # message = [
+        #     " Generating MPR Slices views ... ",
+        # ]
+        # update_info(message)
         BDENTAL_Props = bpy.context.scene.BDENTAL_Props
 
         pointer_check_list = [
@@ -2289,13 +2288,13 @@ class BDENTAL_OT_AddSlices(bpy.types.Operator):
                 obj.lock_location[i] = True
                 obj.lock_rotation[i] = True
                 obj.lock_scale[i] = True
-        context.window.workspace = bpy.data.workspaces["Bdental Slicer"]
-        BDENTAL_SliceUpdate(bpy.context.scene)
+        
+        # BDENTAL_SliceUpdate(bpy.context.scene)
         # if not context.scene.get("bdental_slicer_is_set")==True :
         bpy.ops.wm.bdental_mpr2()
         
-        update_info()
-
+        # update_info()
+        # context.window.workspace = bpy.data.workspaces["Bdental Slicer"]
         return {"FINISHED"}
 
 
