@@ -336,11 +336,14 @@ sys.path.insert(0,BDENTAL_MODULES)
 def add_bdental_libray():
     lib_archive_dir_path = join(BDENTAL_LIBRARY_PATH, "lib_archive")
     if exists(lib_archive_dir_path) :
-        zip_files = glob(join(lib_archive_dir_path, "*.zip"))
-        if zip_files :
-            for f in zip_files :
+        files = glob(join(lib_archive_dir_path, "*"))
+        
+        for f in files :
+            if f.endswith(".zip"):
                 with zipfile.ZipFile(f, 'r') as zip_ref:
                     zip_ref.extractall(BDENTAL_LIBRARY_PATH)
+            else:
+                shutil.move(f, BDENTAL_LIBRARY_PATH)
         shutil.rmtree(lib_archive_dir_path)
 
     return
