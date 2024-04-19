@@ -6,7 +6,7 @@ import shutil
 import tempfile
 import zipfile
 from math import acos, ceil, degrees, pi, radians
-from os.path import abspath, dirname, exists, join, isdir
+from os.path import abspath, dirname, exists, join, isdir, split
 from queue import Queue
 from time import perf_counter as Tcounter
 from time import sleep
@@ -61,7 +61,40 @@ cm_info = {
 clip_offset = 1
 github_cmd = "curl -L https://github.com/issamdakir/Bdental-3-win/zipball/main"
 ######################################################################
+def get_selected_bdental_assets(lib_name='Bdental Library') :
+    result = {"success":0, "message":"", "error" : 0,"directory":None,"filename":None}
+    selected = bpy.context.selected_objects
+    if not selected or any([o.get("bdental_type")!="bdental_implant" for o in selected]) :
+        result["message"]=[f"Error : implants selection is not valid","retry or ESC to cancel."]
+        result["error"] = 2
+        return result
+    ws = bpy.data.workspaces.get('Bdental Library')
+    if not ws :
+        result["message"]=["Error : Bdental Library tab not found","Please reset Bdental default workspaces"]
+        result["error"] = 1
+        return result
+    scr = ws.screens[0]  
+    areas = [(a,i) for (i,a) in enumerate(scr.areas) if a.type == "FILE_BROWSER"] 
+    if not areas :
+        result["message"]=["Error : Bdental Asset Browser not found","Please reset Bdental default interface"]
+        result["error"] = 1
+        return result
+    a, _idx = areas[0]
+    space = a.spaces.active
 
+    current_library_name = space.params.asset_library_ref
+    if not current_library_name == lib_name :
+        result["message"]=[f"Error : The selected asset is not part of {lib_name}","retry or ESC to cancel."]
+        result["error"] = 2
+        return result
+
+    asset_file = space.params.filename
+    library_path_root = bpy.context.preferences.filepaths.asset_libraries.get(lib_name).path
+    head, filename = split(asset_file)
+    directory = join(library_path_root, head)
+    result = {"success":1, "message":"", "error" : 0,"directory":directory,"filename":filename}
+    
+    return result
 
 def isConnected():
     try:

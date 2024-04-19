@@ -5423,7 +5423,7 @@ class BDENTAL_OT_GuideAddComponent(bpy.types.Operator):
         name="Guide Component",
         description="Guide Component",
         items=set_enum_items(
-            ["Cube", "Sphere", "Cylinder", "Fixing Sleeve/Pin", "3D Text"]),
+            ["Cube", "Sphere", "Cylinder", "Fixing Sleeve/Pin","Custom Sleeve Cutter", "3D Text"]),
         default="Cube",
     )
     component_type: EnumProperty(
@@ -5449,14 +5449,15 @@ class BDENTAL_OT_GuideAddComponent(bpy.types.Operator):
             layout.prop(self, "sleeve_height")
             layout.prop(self, "pin_diameter")
             layout.prop(self, "offset")
-    @classmethod
-    def poll(cls, context):
-        is_valid = context.object and context.object.select_get(
-        ) and context.object.type == "MESH" and context.object.mode == 'OBJECT'
         
-        if not is_valid :
-            return False
-        return True
+    # @classmethod
+    # def poll(cls, context):
+    #     is_valid = context.object and context.object.select_get(
+    #     ) and context.object.type == "MESH" and context.object.mode == 'OBJECT'
+        
+    #     if not is_valid :
+    #         return False
+    #     return True
 
     def modal(self, context, event):
         if not event.type in {'ESC', 'RET'}:
@@ -5588,7 +5589,42 @@ class BDENTAL_OT_GuideAddComponent(bpy.types.Operator):
                     else:
                         bpy.ops.wm.bdental_guide_3d_text(
                             "EXEC_DEFAULT", add=True)
+                elif self.guide_component == "Custom Sleeve Cutter":
+                    result = get_selected_bdental_assets(lib_name='Bdental Library')
+                    success, message, error, directory,filename = result.values()
+                    if not success :
+                        if error == 1:
+                            update_info(message = message, rect_color=[1,0,0,0.8])
+                            sleep(2)
+                            update_info()
+                            return {'CANCELLED'}
+                        elif error == 2:
+                            update_info(message = message, rect_color=[1,0.2,0.4,0.8])
+                            return {'RUNNING_MODAL'}
 
+                    else:
+                        implants = context.selected_objects.copy()
+                        assets = []
+                        bpy.ops.wm.append(directory=directory, filename=filename, clear_asset_data=True, autoselect=True)
+                        asset = bpy.data.objects[filename]
+                        assets.append(asset)
+                        for i,imp in enumerate(implants) :
+                            context.view_layer.objects.active = asset
+                            bpy.ops.object.select_all(action='DESELECT')
+                            asset.select_set(True)
+                            bpy.ops.object.duplicate_move()
+                            asset_dup = context.object
+                            asset_dup.name = f"{i+1}_{filename}"
+                            MoveToCollection(asset, "GUIDE Components")
+                            bpy.ops.object.select_all(action='DESELECT')
+                            for obj in [imp, asset_dup]:
+                                context.view_layer.objects.active = obj
+                                bpy.ops.object.transform_apply(
+                                    location=False, rotation=False, scale=True)
+                            asset_dup.matrix_world[:3] = imp.matrix_world[:3]
+                        bpy.data.objects.remove(asset)
+                        update_info()
+                            
                 return {'FINISHED'}
         return {'RUNNING_MODAL'}
 
@@ -5601,7 +5637,17 @@ class BDENTAL_OT_GuideAddComponent(bpy.types.Operator):
             return {"CANCELLED"}
 
     def execute(self, context):
-        self.taeget = context.object
+        
+        if self.guide_component == "3D Text" and (not context.object or not context.object.select_get()):
+            message = [
+            "Please Select target object and retry"]
+            update_info(message=message, rect_color=[1,0,0,0.7])
+            sleep(3)
+            update_info()
+            return {"CANCELLED"}
+
+
+        
         self.mat_add = bpy.data.materials.get(
             "mat_component_add") or bpy.data.materials.new(name="mat_component_add")
         self.mat_add.diffuse_color = [0.0, 1.0, 0.0, 1.0]
@@ -5618,10 +5664,17 @@ class BDENTAL_OT_GuideAddComponent(bpy.types.Operator):
             self.preffix = ""
 
         override, _, _ = CtxOverride(context)
-        bpy.ops.wm.tool_set_by_id(override, name="builtin.cursor")
-        message = [
-            "Please left click to set the component position, and prees ENTER when done"]
+        if self.guide_component == "Custom Sleeve Cutter":
+            message = [
+            "Please select implant(s) , and the custom sleeve cutter from Bdental Library", 
+            "Prees ENTER when done or ESC to cancel"]
+        else :
+            message = [
+            "Please left click to set the component position", "Prees ENTER when done"]
+            bpy.ops.wm.tool_set_by_id(override, name="builtin.cursor")
+
         update_info(message)
+       
         context.window_manager.modal_handler_add(self)
         return {"RUNNING_MODAL"}
 

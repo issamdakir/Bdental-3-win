@@ -362,14 +362,14 @@ class BDENTAL_PT_ToolsPanel(bpy.types.Panel):
         
         # layout.separator()
         
-        Box = layout.box()
-        grid = Box.grid_flow(columns=2, align=True)
-        grid.label(text="TEETH")
-        grid.template_icon(get_icon_value("OUTLINER_OB_LATTICE"), scale=1.5)
+        # Box = layout.box()
+        # grid = Box.grid_flow(columns=2, align=True)
+        # grid.label(text="TEETH")
+        # grid.template_icon(get_icon_value("OUTLINER_OB_LATTICE"), scale=1.5)
 
-        grid = Box.grid_flow(columns=2, align=True)
-        grid.prop(BDENTAL_Props, "TeethLibrary", text="")
-        grid.operator("wm.bdental_add_teeth")
+        # grid = Box.grid_flow(columns=2, align=True)
+        # grid.prop(BDENTAL_Props, "TeethLibrary", text="")
+        # grid.operator("wm.bdental_add_teeth")
 
         Box = layout.box()
         grid = Box.grid_flow(columns=2, align=True)
