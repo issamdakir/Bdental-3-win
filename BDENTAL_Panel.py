@@ -430,6 +430,7 @@ class BDENTAL_PT_Guide(bpy.types.Panel):
         
 
         row = Box.row()
+
         # row.operator("wm.bdental_add_guide_splint")
         row.operator("wm.bdental_add_guide_splint_geom")
 
@@ -453,6 +454,9 @@ class BDENTAL_PT_Guide(bpy.types.Panel):
 
         row = Box.row()
         row.operator("wm.bdental_guide_add_component")
+        row = Box.row()
+        row.operator("wm.bdental_asset_browser_toggle")
+
 
         # row = Box.row()
         # row.operator("wm.bdental_set_guide_components", icon="PLUS")

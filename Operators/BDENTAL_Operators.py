@@ -215,8 +215,53 @@ def update_slices_txt(remove_handlers=True):
     bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
 
        
+class BDENTAL_OT_AssetBrowserToggle(bpy.types.Operator):
+    """ Split area 3d and load asset browser """
 
+    bl_idname = "wm.bdental_asset_browser_toggle"
+    bl_label = "Bdental Library"
 
+    @classmethod
+    def poll(cls, context):
+        bdental_main = bpy.data.workspaces.get("Bdental Main")
+        if not bdental_main :
+            return 0
+        if not context.workspace == bdental_main :
+            return 0
+        return 1
+
+    def execute(self, context):
+        scr = context.screen
+        areas3d = [a for a in scr.areas if a.type == "VIEW_3D"]
+        areas_asset = [a for a in scr.areas if a.ui_type == 'ASSETS']
+        a3d = areas3d[0]
+        r3d = [r for r in a3d.regions if r.type == "WINDOW"][0]
+        s3d = a3d.spaces.active
+        if not areas_asset :
+            with context.temp_override(
+                area=a3d, 
+                space_data=s3d,
+                region=r3d):
+                
+                    bpy.ops.screen.area_split(direction="VERTICAL", factor=1 / 3)
+                    
+                    a2 = [a for a in scr.areas if a.type == "VIEW_3D"][-1]
+                    a2.ui_type = 'ASSETS'
+        else :
+            a = areas_asset[0]
+            r = [r for r in a.regions if r.type == "WINDOW"][0]
+            s = a.spaces.active
+            with context.temp_override(
+            area=a, 
+            space_data=s,
+            region=r):
+            # cursor=(a3d.x , a3d.y + int((a3d.height / 2)))
+            # print(cursor)
+            # bpy.ops.screen.area_join(cursor=cursor)
+                bpy.ops.screen.area_close()
+                
+
+        return{"FINISHED"}
     
 class BDENTAL_OT_SetConfig(bpy.types.Operator):
     """ set bdental config """
@@ -12888,6 +12933,7 @@ class BDENTAL_OT_PathCutter(bpy.types.Operator):
 # Registration :
 #################################################################################################
 classes = [
+    BDENTAL_OT_AssetBrowserToggle,
     BDENTAL_OT_RibbonCutterAdd,
     BDENTAL_OT_RibbonCutter_Perform_Cut,
     BDENTAL_OT_SetConfig,
