@@ -633,7 +633,7 @@ class BDENTAL_OT_checkUpdate(bpy.types.Operator):
                 current_txt, current_num = lines[0].split(";")
                 current_num = int(current_num)
                 
-            log_txt = [f"Bedental addon update check :\nCurrent = {current_txt}\nLast release : {last_txt}"]
+            log_txt = [f"Bedental addon update check :\nCurrent = {current_txt}\nLast release = {last_txt}"]
             for t in log_txt :
                 print(t)
             
