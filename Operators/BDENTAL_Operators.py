@@ -221,16 +221,24 @@ class BDENTAL_OT_AssetBrowserToggle(bpy.types.Operator):
     bl_idname = "wm.bdental_asset_browser_toggle"
     bl_label = "Bdental Library"
 
-    @classmethod
-    def poll(cls, context):
-        bdental_main = bpy.data.workspaces.get("Bdental Main")
-        if not bdental_main :
-            return 0
-        if not context.workspace == bdental_main :
-            return 0
-        return 1
+    # @classmethod
+    # def poll(cls, context):
+    #     # bdental_main = bpy.data.workspaces.get("Bdental Main")
+    #     # if not bdental_main :
+    #     #     return 0
+    #     # if not context.workspace == bdental_main :
+    #     #     return 0
+    #     return context.workspace.name == "Bdental Main"
 
     def execute(self, context):
+        if not context.workspace.name == "Bdental Main" :
+            txt = ["Cancelled : Please ensure you are in Bdental Main workspace !"]
+            update_info(message=txt, rect_color=[1,0,0,0.8])
+            sleep(3)
+            update_info()
+            return {"CANCELLED"}
+        
+        
         scr = context.screen
         areas3d = [a for a in scr.areas if a.type == "VIEW_3D"]
         areas_asset = [a for a in scr.areas if a.ui_type == 'ASSETS']
@@ -255,9 +263,6 @@ class BDENTAL_OT_AssetBrowserToggle(bpy.types.Operator):
             area=a, 
             space_data=s,
             region=r):
-            # cursor=(a3d.x , a3d.y + int((a3d.height / 2)))
-            # print(cursor)
-            # bpy.ops.screen.area_join(cursor=cursor)
                 bpy.ops.screen.area_close()
                 
 
@@ -3479,17 +3484,21 @@ class BDENTAL_OT_AddImplant(bpy.types.Operator):
 
         implant.name = name
         implant.show_name = True
-        implant.dimensions = Vector(
-            (self.implant_diameter, self.implant_diameter, self.implant_lenght))
+        implant.dimensions = Vector((self.implant_diameter, self.implant_diameter, self.implant_lenght))
         implant["bdental_type"] = "bdental_implant"
         implant["bdental_remove_code"] = self.tooth_number
         MoveToCollection(implant, implants_coll.name)
 
         if self.safe_zone :
             safe_zone.name = f"SAFE_ZONE({self.tooth_number})"
-            safe_zone.dimensions = implant.dimensions + \
-                Vector((self.safe_zone_thikness*2,
-                    self.safe_zone_thikness*2, self.safe_zone_thikness))
+            dims=[
+                self.implant_diameter + (self.safe_zone_thikness*2),
+                self.implant_diameter + (self.safe_zone_thikness*2),
+                self.implant_lenght + self.safe_zone_thikness,
+            ]
+            print("before rescale : ",safe_zone.dimensions)
+            safe_zone.dimensions = dims
+            print("after rescale : ",safe_zone.dimensions)
             safe_zone["bdental_type"] = "bdental_implant_safe_zone"
             safe_zone["bdental_remove_code"] = self.tooth_number
             safe_zones_coll = add_collection(
