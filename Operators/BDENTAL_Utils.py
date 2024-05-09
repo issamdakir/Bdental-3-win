@@ -53,6 +53,8 @@ bdental_app_template_zip_file = join(
 path_to_startup = join(addon_dir, "Resources", "startup.blend")
 DataBlendFile = join(addon_dir, "Resources", "BlendData",
                      "BDENTAL_BlendData.blend")
+lib_name='Bdental Library'
+
 cm_info = {
     1: (0.348, 0.095),
     2: (0.575, 0.480),
@@ -61,34 +63,115 @@ cm_info = {
 clip_offset = 1
 github_cmd = "curl -L https://github.com/issamdakir/Bdental-3-win/zipball/main"
 ######################################################################
-def get_selected_bdental_assets(lib_name='Bdental Library') :
+def close_asset_browser(context, area=None):
+    
+    global lib_name
+    if area :
+        a = area
+        r = [r for r in a.regions if r.type == "WINDOW"][0]
+        s = a.spaces.active
+        with context.temp_override(
+        area=a, 
+        space_data=s,
+        region=r):
+            bpy.ops.screen.area_close()
+        return
+    
+    
+    scr = context.screen
+    areas_asset = []
+    for a in scr.areas :
+        if a.type == "FILE_BROWSER" :
+            if a.ui_type == 'ASSETS' :
+                areas_asset.append(a)
+    if areas_asset :
+        for a in areas_asset :
+            r = [r for r in a.regions if r.type == "WINDOW"][0]
+            s = a.spaces.active
+            with context.temp_override(
+            area=a, 
+            space_data=s,
+            region=r):
+                bpy.ops.screen.area_close()
+            return
+
+
+def open_asset_browser():
+    global lib_name
+    context = bpy.context
+    asset_library_ref_target = lib_name
+    asset_library_ref_fallback = 'LOCAL'
+        
+    scr = context.screen
+    areas3d = []
+    for a in scr.areas :
+        if a.type == "FILE_BROWSER" :
+            if a.ui_type == 'ASSETS' :
+                return a, a.spaces.active
+        elif a.type == "VIEW_3D":
+            areas3d.append(a)
+    
+    if areas3d :
+        a3d = areas3d[0]
+        r3d = [r for r in a3d.regions if r.type == "WINDOW"][0]
+        s3d = a3d.spaces.active
+        
+        with context.temp_override(
+            area=a3d, 
+            space_data=s3d,
+            region=r3d):
+            
+                bpy.ops.screen.area_split(direction="VERTICAL", factor=1 / 3)
+                scr.update_tag()
+                
+        a2 = [a for a in scr.areas if a.type == "VIEW_3D"][-1]
+        a2.type = "FILE_BROWSER"
+        a2.ui_type = 'ASSETS'
+        scr.update_tag()
+
+        s2 = a2.spaces.active
+        # # s2.deselect_all()
+
+        # print("a2 spaces : ")
+        # for  s in a2.spaces[:]:
+        #     print(s.type)
+        #     try :
+        #         print(s.params)
+        #     except:
+        #         print("ERROR")
+        # s2=None
+        # s2 = a2.spaces.active
+        # try :
+            
+        #     s2.params.asset_library_ref = lib_name
+        # except Exception as er :
+        #     print("handled error : ",er)
+        # print({"area type":a2.type, "x":a2.x, "y":a2.y})
+        return a2,s2
+
+
+def get_selected_bdental_assets(lib_name='Bdental Library', area=None) :
     result = {"success":0, "message":"", "error" : 0,"directory":None,"filename":None}
     selected = bpy.context.selected_objects
-    if not selected or any([o.get("bdental_type")!="bdental_implant" for o in selected]) :
-        result["message"]=[f"Error : implants selection is not valid","retry or ESC to cancel."]
+    if not selected or not [o.get("bdental_type")!="bdental_implant" for o in selected] :
+        result["message"]=[f"Warning : Please select implants","<ENTER> : retry  <ESC> : cancel."]
         result["error"] = 2
         return result
-    ws = bpy.data.workspaces.get('Bdental Library')
-    if not ws :
-        result["message"]=["Error : Bdental Library tab not found","Please reset Bdental default workspaces"]
-        result["error"] = 1
-        return result
-    scr = ws.screens[0]  
-    areas = [(a,i) for (i,a) in enumerate(scr.areas) if a.type == "FILE_BROWSER"] 
-    if not areas :
-        result["message"]=["Error : Bdental Asset Browser not found","Please reset Bdental default interface"]
-        result["error"] = 1
-        return result
-    a, _idx = areas[0]
-    space = a.spaces.active
+    
+    space = area.spaces.active
 
     current_library_name = space.params.asset_library_ref
     if not current_library_name == lib_name :
-        result["message"]=[f"Error : The selected asset is not part of {lib_name}","retry or ESC to cancel."]
+        result["message"]=[f"Warning : The selected asset is not part of {lib_name}","<ENTER> : retry  <ESC> : cancel."]
         result["error"] = 2
         return result
 
     asset_file = space.params.filename
+    if not asset_file :
+        result["message"]=[f"Warning : Please select asset from {lib_name}","<ENTER> : retry  <ESC> : cancel."]
+        result["error"] = 2
+        return result
+
     library_path_root = bpy.context.preferences.filepaths.asset_libraries.get(lib_name).path
     head, filename = split(asset_file)
     directory = join(library_path_root, head)
@@ -2145,16 +2228,18 @@ def AddPlaneMesh(DimX, DimY, Name):
 
 def AddPlaneObject(Name, mesh, CollName):
     Plane_obj = bpy.data.objects.new(Name, mesh)
-    MyColl = bpy.data.collections.get(CollName)
+    bpy.context.scene.collection.objects.link(Plane_obj)
+    # MoveToCollection(Plane_obj, CollName)
+    # MyColl = bpy.data.collections.get(CollName)
 
-    if not MyColl:
-        MyColl = bpy.data.collections.new(CollName)
+    # if not MyColl:
+    #     MyColl = bpy.data.collections.new(CollName)
 
-    if not MyColl in bpy.context.scene.collection.children[:]:
-        bpy.context.scene.collection.children.link(MyColl)
+    # if not MyColl in bpy.context.scene.collection.children[:]:
+    #     bpy.context.scene.collection.children.link(MyColl)
 
-    if not Plane_obj in MyColl.objects[:]:
-        MyColl.objects.link(Plane_obj)
+    # if not Plane_obj in MyColl.objects[:]:
+    #     MyColl.objects.link(Plane_obj)
 
     return Plane_obj
 
@@ -2240,7 +2325,7 @@ def VolumeRender(DcmInfo, GpShader, ShadersBlendFile, VoxelMode,update_info):
     DimX, DimY, DimZ = (Sz[0] * Sp[0], Sz[1] * Sp[1], Sz[2] * Sp[2])
     SagittalOffset, CoronalOffset, AxialOffset = Sp
 
-    AxialPlansList, CoronalPlansList, SagittalPlansList = [], [], []
+    # AxialPlansList, CoronalPlansList, SagittalPlansList = [], [], []
     # Load VGS Group Node :
     VGS = bpy.data.node_groups.get(f"{Preffix}_{GpShader}")
     if not VGS:
@@ -2274,7 +2359,7 @@ def VolumeRender(DcmInfo, GpShader, ShadersBlendFile, VoxelMode,update_info):
     )
     AxialImagesList = [bpy.data.images[Name] for Name in AxialImagesNamesList]
 
-    print("Axial Voxel rendering...")
+    print("Volume rendering...")
     
     Scene_Settings()
     for scr in bpy.data.screens:
@@ -2293,8 +2378,21 @@ def VolumeRender(DcmInfo, GpShader, ShadersBlendFile, VoxelMode,update_info):
                 r3d.update()
 
     mesh = AddPlaneMesh(DimX, DimY, "volume_plane")
+    Override, area3D, space3D = CtxOverride(bpy.context)
+    space3D.shading.show_xray = True
+    space3D.shading.xray_alpha = 0.5
     n = len(AxialImagesList)
-    
+
+    # try :
+        # scr = bpy.context.screen
+        # areas = [area for area in scr.areas if area.type == "VIEW_3D"]
+        # if areas :
+        #     a = areas[0]
+        #     s = a.spaces.active
+        #     s.shading.show_xray = True
+        #     s.shading.xray_alpha = 0.5
+    # except Exception as er :
+    #     print("error when setting xray mode before volume render/n"+er)
     for i, ImageData in enumerate(AxialImagesList):
         # # Add Plane :
         # ##########################################
@@ -2348,21 +2446,22 @@ def VolumeRender(DcmInfo, GpShader, ShadersBlendFile, VoxelMode,update_info):
             Override, area3D, space3D = CtxOverride(bpy.context)
             bpy.ops.view3d.view_selected(Override)
             # sleep(3)
-
-        percentage = int(i*100/n)
-        txt = [f"Rendering {percentage}% ..."]
-        update_info(message=txt, rect_color=[1,0.4,0,0.7])
+        if not(i % 5):
+            percentage = int(i*100/n)
+            txt = [f"Rendering {percentage}% ..."]
+            update_info(message=txt, rect_color=[1,0.4,0,0.7])
+            # sleep(0.05)
         
         # bpy.ops.wm.redraw_timer(type='DRAW_SWAP',iterations=1)
         
         # r3d.update()
         # bpy.ops.wm.redraw_timer(Override, type='DRAW_WIN_SWAP', iterations=1)
         
-        sleep(0.01)
+        
         ############# LOOP END ##############
         #####################################
 
-    Override, area3D, space3D = CtxOverride(bpy.context)
+    # Override, area3D, space3D = CtxOverride(bpy.context)
     # bpy.ops.view3d.toggle_xray(Override)
     # Join Planes Make Cube Voxel :
     bpy.ops.object.select_all(action="DESELECT")
@@ -2380,6 +2479,7 @@ def VolumeRender(DcmInfo, GpShader, ShadersBlendFile, VoxelMode,update_info):
     bpy.ops.object.join()
 
     Voxel_Axial = bpy.context.object
+    MoveToCollection(Voxel_Axial, "CT_Voxel")
     Voxel_Axial["bdental_type"] = "CT_Voxel"
 
     Voxel_Axial.name = f"{Preffix}_Axial_CTVolume"
@@ -2596,6 +2696,7 @@ def VolumeRender(DcmInfo, GpShader, ShadersBlendFile, VoxelMode,update_info):
     bpy.ops.object.select_all(action="DESELECT")
     Voxel_Axial.select_set(True)
     bpy.context.view_layer.objects.active = Voxel_Axial
+    
 
     # ###################### Change to ORTHO persp with nice view angle :##########
 

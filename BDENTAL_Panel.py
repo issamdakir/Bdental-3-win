@@ -396,18 +396,26 @@ class BDENTAL_PT_ImplantPanel(bpy.types.Panel):
         Box = layout.box()
         # Box.label(text="IMPLANT")#icon=yellow_point
         g = Box.grid_flow(columns=3, align=True)
+        
         g.operator("wm.bdental_slices_pointer_select", text="Select Pointer", icon="EMPTY_AXIS")
         g.operator("wm.bdental_fly_previous", text="", icon="TRIA_LEFT")
         g.operator("wm.bdental_fly_next", text="", icon="TRIA_RIGHT")
+
         g = Box.grid_flow(columns=2, align=True)
 
         g.operator("wm.bdental_add_implant", text="Add Implant", icon="ADD")
-        g.operator("wm.bdental_lock_to_pointer")
-        g.operator("wm.bdental_implant_to_pointer")
-   
         g.operator("wm.bdental_remove_implant", text="Remove Implant" , icon="REMOVE")
+        
+        g = Box.grid_flow(columns=1, align=True)
+        g.operator("wm.add_fixing_pin")
+
+        g = Box.grid_flow(columns=2, align=True)
+        g.operator("wm.bdental_lock_to_pointer")
         g.operator("wm.bdental_unlock_from_pointer")
-        g.operator("wm.bdental_pointer_to_implant")
+
+        g = Box.grid_flow(columns=2, align=True)
+        g.operator("wm.bdental_implant_to_pointer", text="Selected to Pointer")
+        g.operator("wm.bdental_pointer_to_implant", text="Pointer to Selected")
 
         g = Box.grid_flow(columns=1, align=True)
         g.operator("wm.bdental_align_implants")
@@ -454,8 +462,7 @@ class BDENTAL_PT_Guide(bpy.types.Panel):
 
         row = Box.row()
         row.operator("wm.bdental_guide_add_component")
-        row = Box.row()
-        row.operator("wm.bdental_asset_browser_toggle")
+        
 
 
         # row = Box.row()
@@ -535,6 +542,23 @@ class BDENTAL_PT_Align(bpy.types.Panel):
         # row = box.row()
         # row.operator("wm.bdental_auto_align_icp", text="AUTO ALIGN")
 
+class BDENTAL_PT_BLibrary(bpy.types.Panel):
+    """ Bdental Library Panel"""
+
+    bl_idname = "BDENTAL_PT_BLibrary"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"  # blender 2.7 and lower = TOOLS
+    bl_category = "BDENTAL"
+    bl_label = "LIBRARY"
+    bl_options = {"DEFAULT_CLOSED"}
+
+    def draw(self, context):
+        layout = self.layout
+        box = layout.box()
+        grid = box.grid_flow(columns=1, align=True)
+        grid.operator("wm.bdental_asset_browser_toggle")
+        grid.operator("wm.add_custom_sleeve_cutter")
+        
 
 ##########################################################################################
 # Registration :
@@ -548,8 +572,9 @@ classes = [
     BDENTAL_PT_ImplantPanel,
     BDENTAL_PT_Align,
     BDENTAL_PT_ToolsPanel,
+    BDENTAL_PT_BLibrary,
     BDENTAL_PT_Guide,
-    
+   
 ]
 
 

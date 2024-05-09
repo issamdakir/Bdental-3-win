@@ -630,10 +630,14 @@ class BDENTAL_OT_checkUpdate(bpy.types.Operator):
         if exists(ADDON_VER_PATH):
             with open(ADDON_VER_PATH, "r") as rf:
                 lines = rf.readlines()
-                current = int(lines[0].split(";")[1])
+                current_txt, current_num = lines[0].split(";")
+                current_num = int(current_num)
+                
+            log_txt = [f"Bedental addon update check :\nCurrent = {current_txt}\nLast release = {last_txt}"]
+            for t in log_txt :
+                print(t)
             
-            
-            if last_num <= current :
+            if last_num <= current_num :
                 update_info(message=["Bdental is up to date."], rect_color=[0,1,0.2,0.7])
                 sleep(3)
                 update_info()
@@ -658,7 +662,9 @@ class BDENTAL_OT_checkUpdate(bpy.types.Operator):
         "press OK to confirm",
         "Blender will restart automatically!",
         "",
-]
+        ]
+
+        
 
         wm = context.window_manager
         return wm.invoke_props_dialog(self,width=500)
