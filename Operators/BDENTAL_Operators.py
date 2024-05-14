@@ -220,7 +220,7 @@ class BDENTAL_OT_AssetBrowserToggle(bpy.types.Operator):
     """ Split area 3d and load asset browser """
 
     bl_idname = "wm.bdental_asset_browser_toggle"
-    bl_label = "Bdental Library"
+    bl_label = "Open Bdental Library"
 
     # @classmethod
     # def poll(cls, context):
@@ -3728,7 +3728,7 @@ class BDENTAL_OT_LockToPointer(bpy.types.Operator):
         if not pointer_check_list:
             return False
         pointer = pointer_check_list[0]
-        if not context.object or context.object.get("bdental_type") not in ["bdental_implant", "fixing_sleeve"]:
+        if not context.object or context.object.get("bdental_type") not in ["bdental_implant", "bdental_fixing_sleeve"]:
             return False
         if context.object.constraints:
             cp = [c for c in context.object.constraints if c.type ==
@@ -3782,7 +3782,7 @@ class BDENTAL_OT_UnlockFromPointer(bpy.types.Operator):
             return False
 
         pointer = pointer_check_list[0]
-        if not context.object or context.object.get("bdental_type") not in ["bdental_implant", "fixing_sleeve"]:
+        if not context.object or context.object.get("bdental_type") not in ["bdental_implant", "bdental_fixing_sleeve"]:
             return False
 
         if not context.object.constraints:
@@ -3801,7 +3801,7 @@ class BDENTAL_OT_UnlockFromPointer(bpy.types.Operator):
             mat_bdental_implant.use_nodes = True
             mat_bdental_implant.node_tree.nodes["Principled BSDF"].inputs[0].default_value = [0.471736, 0.015215, 0.800000, 1.000000]
             mat_bdental_implant.node_tree.nodes["Principled BSDF"].inputs[9].default_value = 0.28
-
+            mat_bdental_implant.diffuse_color = [0.471736, 0.015215, 0.800000, 1.000000]
 
             for slot in obj.material_slots:
                 bpy.ops.object.material_slot_remove({"object": obj})
@@ -3830,7 +3830,7 @@ class BDENTAL_OT_ImplantToPointer(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        if not context.object or not context.object.get("bdental_type") in ["bdental_implant", "fixing_sleeve"] or not context.object.select_get():
+        if not context.object or not context.object.get("bdental_type") in ["bdental_implant", "bdental_fixing_sleeve"] or not context.object.select_get():
             return False
         pointer_check_list = [
             obj for obj in context.scene.objects if  obj.get("bdental_type") == "slices_pointer"]
@@ -3843,7 +3843,7 @@ class BDENTAL_OT_ImplantToPointer(bpy.types.Operator):
         pointer = [
             o for o in context.scene.objects if  o.get("bdental_type") == "slices_pointer"][0]
         objs = [o for o in context.scene.objects if o.get(
-            "bdental_type") in ["bdental_implant", "fixing_sleeve"]]
+            "bdental_type") in ["bdental_implant", "bdental_fixing_sleeve"]]
 
         for o in objs:
             try:
@@ -3869,7 +3869,7 @@ class BDENTAL_OT_PointerToImplant(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        if not context.object or not context.object.get("bdental_type") in ["bdental_implant", "fixing_sleeve"] or not context.object.select_get():
+        if not context.object or not context.object.get("bdental_type") in ["bdental_implant", "bdental_fixing_sleeve"] or not context.object.select_get():
             return False
         pointer_check_list = [
             obj for obj in context.scene.objects if  obj.get("bdental_type") == "slices_pointer"]
@@ -3882,7 +3882,7 @@ class BDENTAL_OT_PointerToImplant(bpy.types.Operator):
         pointer = [
             o for o in context.scene.objects if  o.get("bdental_type") == "slices_pointer"][0]
         objs = [o for o in context.scene.objects if o.get(
-            "bdental_type") in ["bdental_implant", "fixing_sleeve"]]
+            "bdental_type") in ["bdental_implant", "bdental_fixing_sleeve"]]
 
         for o in objs:
             try:
@@ -3919,7 +3919,7 @@ class BDENTAL_OT_FlyNext(bpy.types.Operator):
             obj for obj in context.scene.objects if  obj.get("bdental_type") == "slices_pointer"]
         
         obj_check_list = [o for o in context.scene.objects if o.get(
-            "bdental_type") in ["bdental_implant", "fixing_sleeve"]]
+            "bdental_type") in ["bdental_implant", "bdental_fixing_sleeve"]]
         if not pointer_check_list or not obj_check_list:
             return False
         if len(obj_check_list) < 2:
@@ -3931,7 +3931,7 @@ class BDENTAL_OT_FlyNext(bpy.types.Operator):
         pointer_check_list = [
             obj for obj in context.scene.objects if  obj.get("bdental_type") == "slices_pointer"]
         obj_check_list = [o for o in context.scene.objects if o.get(
-            "bdental_type") in ["bdental_implant", "fixing_sleeve"]]
+            "bdental_type") in ["bdental_implant", "bdental_fixing_sleeve"]]
         pointer = pointer_check_list[0]
 
         # check all implants and apply constraints if exists and unlock them
@@ -3964,8 +3964,7 @@ class BDENTAL_OT_FlyNext(bpy.types.Operator):
         else :
             message = [f"Pointer at {active_obj.name.split('_ADD_')[-1]}"]
         update_info(message, rect_color=[0.8, 0.6, 0.000000, 1.000000])
-        sleep(2)
-        update_info()
+        
 
         return {"FINISHED"}
 
@@ -3981,7 +3980,7 @@ class BDENTAL_OT_FlyPrevious(bpy.types.Operator):
         pointer_check_list = [
             obj for obj in context.scene.objects if  obj.get("bdental_type") == "slices_pointer"]
         obj_check_list = [o for o in context.scene.objects if o.get(
-            "bdental_type") in ["bdental_implant", "fixing_sleeve"]]
+            "bdental_type") in ["bdental_implant", "bdental_fixing_sleeve"]]
         if not pointer_check_list or not obj_check_list:
             return False
         if len(obj_check_list) < 2:
@@ -3993,7 +3992,7 @@ class BDENTAL_OT_FlyPrevious(bpy.types.Operator):
         pointer_check_list = [
             obj for obj in context.scene.objects if  obj.get("bdental_type") == "slices_pointer"]
         obj_check_list = [o for o in context.scene.objects if o.get(
-            "bdental_type") in ["bdental_implant", "fixing_sleeve"]]
+            "bdental_type") in ["bdental_implant", "bdental_fixing_sleeve"]]
         pointer = pointer_check_list[0]
 
         # check all implants and apply constraints if exists and unlock them
@@ -4038,8 +4037,7 @@ class BDENTAL_OT_FlyPrevious(bpy.types.Operator):
             message = [f"Pointer at {active_obj.name.split('_ADD_')[-1]}"]
         
         update_info(message, rect_color=[0.8, 0.6, 0.000000, 1.000000])
-        sleep(2)
-        update_info()
+        
 
         return {"FINISHED"}
 
@@ -5179,7 +5177,7 @@ class BDENTAL_OT_GuideFinalise(bpy.types.Operator):
             guide.select_set(True)
             bool_modif = guide.modifiers.new(name="Bool", type="BOOLEAN")
             bool_modif.operation = "DIFFERENCE"
-            bool_modif.solver = "FAST"
+            # bool_modif.solver = "FAST"
             bool_modif.object = obj
             bpy.ops.object.convert(target='MESH', keep_original=False)
             obj.hide_set(True)
@@ -5765,7 +5763,7 @@ class BDENTAL_OT_GuideAddComponent(bpy.types.Operator):
 class BDENTAL_OT_AddCustomSleeveCutter(bpy.types.Operator):
     """add a sleeve cutter from bdental asset library"""
     bl_idname = "wm.add_custom_sleeve_cutter"
-    bl_label = "Sleeve Cutter"
+    bl_label = "Custom Sleeve Cutter"
     bl_options = {'REGISTER', 'UNDO'}
         
     # @classmethod
@@ -5780,7 +5778,7 @@ class BDENTAL_OT_AddCustomSleeveCutter(bpy.types.Operator):
     def modal(self, context, event):
         if self.can_update :
             message = [
-            "Select target implant(s) , and sleeve cutter from Bdental Library", 
+            "Select target implant(s)/Fixing sleeves" , "select sleeve cutter from Bdental Library", 
             "<ENTER> : confirm  <ESC> : cancel"]
             update_info(message=message)
             self.can_update = False
@@ -5810,26 +5808,46 @@ class BDENTAL_OT_AddCustomSleeveCutter(bpy.types.Operator):
                         return {'RUNNING_MODAL'}
 
                 else:
-                    implants = context.selected_objects.copy()
+                    objs = context.selected_objects.copy()
                     assets = []
                     bpy.ops.wm.append(directory=directory, filename=filename, clear_asset_data=True, autoselect=True)
                     asset = bpy.data.objects[filename]
                     assets.append(asset)
-                    for i,imp in enumerate(implants) :
-                        context.view_layer.objects.active = asset
+
+                    bpy.ops.object.select_all(action='DESELECT')
+                    context.view_layer.objects.active = asset
+                    asset.select_set(True)
+                    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+                    for i,obj in enumerate(objs) :
+                        flip = False
+                        if obj in self.implts :
+                            tooth_number = obj.get("bdental_remove_code")
+                            if tooth_number < 31 :
+                                flip = True
                         bpy.ops.object.select_all(action='DESELECT')
+                        context.view_layer.objects.active = obj
+                        obj.select_set(True)
+                        bpy.ops.object.transform_apply(
+                            location=False, rotation=False, scale=True)
+                        
+                        bpy.ops.object.select_all(action='DESELECT')
+                        context.view_layer.objects.active = asset
                         asset.select_set(True)
+                        
                         bpy.ops.object.duplicate_move()
                         asset_dup = context.object
                         asset_dup.name = f"{i+1}_{filename}"
-                        asset_dup["bdental_type"]="custom_sleeve cutter"
+                        asset_dup["bdental_type"]="bdental_custom_sleeve cutter"
                         MoveToCollection(asset_dup, "GUIDE Components")
+                         
+                        # asset_dup.matrix_world[:3] = obj.matrix_world[:3]
                         bpy.ops.object.select_all(action='DESELECT')
-                        for obj in [imp, asset_dup]:
-                            context.view_layer.objects.active = obj
-                            bpy.ops.object.transform_apply(
-                                location=False, rotation=False, scale=True)
-                        asset_dup.matrix_world[:3] = imp.matrix_world[:3]
+                        obj.select_set(True)
+                        asset_dup.select_set(True)
+                        context.view_layer.objects.active = obj
+                        bpy.ops.wm.bdental_align_to_active(invert_z=flip )
+                        bpy.ops.wm.bdental_parent_object(display_info=False)
+                        
                     bpy.data.objects.remove(asset)
                     bpy.ops.object.select_all(action='DESELECT')
                     update_info()
@@ -5838,14 +5856,31 @@ class BDENTAL_OT_AddCustomSleeveCutter(bpy.types.Operator):
                     return {'FINISHED'}
         return {'RUNNING_MODAL'}
 
+    def defer(self):
+        global lib_name
+        params = self.asset_browser_space.params
+        if not params:
+            return 0
+        
+
+        try:
+            params.asset_library_ref = lib_name
+            
+        except TypeError:
+            # If the reference doesn't exist.
+            params.asset_library_ref = 'LOCAL'           
+
+        params.import_type = 'APPEND'
+        self.can_update = True
 
     def invoke(self, context, event):
-        global lib_name
+        
         if context.space_data.type == "VIEW_3D":
-            
-            implants = [o for o in context.scene.objects[:] if o.get("bdental_type")=="bdental_implant"]
-            if not  implants:
-                message = ["Cancelled :", "Please add implants first and retry"]
+            self.implts = [o for o in context.scene.objects[:] if o.get("bdental_type") == "bdental_implant" ]
+            self.fixing_sleeves = [o for o in context.scene.objects[:] if o.get("bdental_type") == "bdental_fixing_sleeve" ]
+            objs = self.implts + self.fixing_sleeves
+            if not  objs:
+                message = ["Cancelled :", "Please add implants/fixing pin first and retry"]
                 update_info(message=message, rect_color=[1,0,0,0.7])
                 sleep(3)
                 update_info()
@@ -5854,28 +5889,8 @@ class BDENTAL_OT_AddCustomSleeveCutter(bpy.types.Operator):
             self.asset_browser_area , self.asset_browser_space = open_asset_browser()
             self.can_update = False
             
-            asset_library_ref_target = lib_name
-            asset_library_ref_fallback = 'LOCAL'
-            def defer():
-                params = self.asset_browser_space.params
-                if not params:
-                    return 0
-                
-
-                try:
-                    params.asset_library_ref = asset_library_ref_target
-                    self.can_update = True
-                except TypeError:
-                    # If the reference doesn't exist.
-                    params.asset_library_ref = asset_library_ref_fallback
-                params.import_type = 'APPEND'
-
-            bpy.app.timers.register(defer)
-            
-            # message = [
-            # "Select target implant(s) , and sleeve cutter from Bdental Library", 
-            # "<ENTER> : confirm  <ESC> : cancel"]
-            # update_info(message=message)
+            bpy.app.timers.register(self.defer)
+           
             context.window_manager.modal_handler_add(self)
             return {"RUNNING_MODAL"}
             
@@ -5928,12 +5943,12 @@ class BDENTAL_OT_AddFixingPin(bpy.types.Operator):
                 return {'CANCELLED'}
         elif event.type in {'RET'}:
             if event.value == 'RELEASE':
-                n = len([o for o in context.scene.objects[:] if o.get("bdental_type")=="fixing_pin"])
+                n = len([o for o in context.scene.objects[:] if o.get("bdental_type")=="bdental_fixing_pin"])
 
                 bpy.ops.object.select_all(action="DESELECT")
                 pin = AppendObject("fixing_pin", coll_name="GUIDE Components")
                 pin.name = f"Fixing_Pin({n+1})"
-                pin["bdental_type"] ="fixing_pin"
+                pin["bdental_type"] ="bdental_fixing_pin"
                 # pin.active_material = self.mat_cut
 
                 pin.dimensions[:2] = [self.drill_diameter,self.drill_diameter]
@@ -5947,7 +5962,7 @@ class BDENTAL_OT_AddFixingPin(bpy.types.Operator):
                 sleeve = AppendObject(
                     "sleeve", coll_name="GUIDE Components")
                 sleeve.name = f"_ADD_Fixing_Sleeve({n+1})"
-                sleeve["bdental_type"] ="fixing_sleeve"
+                sleeve["bdental_type"] ="bdental_fixing_sleeve"
 
                 bpy.ops.object.select_all(action="DESELECT")
                 sleeve.select_set(True)
@@ -5978,16 +5993,16 @@ class BDENTAL_OT_AddFixingPin(bpy.types.Operator):
                     sleeve.select_set(True)
                     context.view_layer.objects.active = sleeve
                     bpy.ops.wm.bdental_lock_to_pointer()
-                except :
+                except Exception as er:
+                    print("catched error : ", er)
                     pass
                 
 
-                override, _, _ = CtxOverride(context)
-                bpy.ops.wm.tool_set_by_id(
-                    override, name="builtin.transform")
-                update_info()
+                # override, _, _ = CtxOverride(context)
+                # bpy.ops.wm.tool_set_by_id(
+                #     override, name="builtin.transform")
 
-                return {'FINISHED'}
+                # return {'FINISHED'}
         return {'RUNNING_MODAL'}
 
 
@@ -7605,6 +7620,8 @@ class BDENTAL_OT_Parent(bpy.types.Operator):
     bl_idname = "wm.bdental_parent_object"
     bl_label = "PARENT"
 
+    display_info : BoolProperty(default = True)
+
     @classmethod
     def poll(cls, context):
         return context.object and len(context.selected_objects) >= 2
@@ -7629,10 +7646,11 @@ class BDENTAL_OT_Parent(bpy.types.Operator):
         else:
             message = ["selected object parented to {}".format(
                 context.object.name)]
-        update_info(message)
-        sleep(2)
-        update_info()
-        os.system("cls")
+        if self.display_info :
+            update_info(message)
+            sleep(2)
+            update_info()
+            os.system("cls")
         return {"FINISHED"}
 
 
