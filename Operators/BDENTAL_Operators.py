@@ -3743,9 +3743,12 @@ class BDENTAL_OT_LockToPointer(bpy.types.Operator):
     def execute(self, context):
         obj = context.object
         mat = obj.active_material
-        obj["bdental_mat"] = mat.name
+        if mat :
+            mat.use_fake_user = True
+            obj["bdental_mat"] = mat.name
         mat_bdental_locked = bpy.data.materials.get(
             "mat_bdental_locked") or bpy.data.materials.new("mat_bdental_locked")
+        mat_bdental_locked.use_fake_user = True
         mat_bdental_locked.diffuse_color = (1, 0, 0, 1)  # red color
         mat_bdental_locked.use_nodes = True
         mat_bdental_locked.node_tree.nodes["Principled BSDF"].inputs[19].default_value = (
@@ -4015,11 +4018,14 @@ class BDENTAL_OT_FlyPrevious(bpy.types.Operator):
             cp = [c for c in o.constraints if c.type ==
               "CHILD_OF" and c.target == pointer]
             if cp :
-                bpy.ops.object.select_all(action="DESELECT")
-                o.select_set(True)
-                context.view_layer.objects.active = o
-                bpy.ops.wm.bdental_unlock_from_pointer()
-                break
+                try :
+                    bpy.ops.object.select_all(action="DESELECT")
+                    o.select_set(True)
+                    context.view_layer.objects.active = o
+                    bpy.ops.wm.bdental_unlock_from_pointer()
+                    break
+                except :
+                    continue
         
         obj_check_list = [o for o in context.scene.objects if o.get(
             "bdental_type") in ["bdental_implant", "bdental_fixing_sleeve"]]
@@ -5973,23 +5979,13 @@ class BDENTAL_OT_AddFixingPin(bpy.types.Operator):
                 return {'CANCELLED'}
         elif event.type in {'RET'}:
             if event.value == 'RELEASE':
-                n = len([o for o in context.scene.objects[:] if o.get("bdental_type")=="bdental_fixing_pin"])
-                bpy.ops.object.select_all(action="DESELECT")
-
-                #Add sleeve
-                sleeve = AppendObject(
-                    "sleeve", coll_name="GUIDE Components")
-                sleeve.name = f"_ADD_Fixing_Sleeve({n+1})"
-                sleeve["bdental_type"] ="bdental_fixing_sleeve"
-                sleeve.dimensions = [self.sleeve_diameter,
-                                    self.sleeve_diameter,
-                                    self.drill_lenght-self.bone_depth]
-
-                with context.temp_override(active_object=sleeve):
-                    bpy.ops.object.transform_apply(location=True, rotation=False, scale=True)
-                sleeve.matrix_world[:3] = context.scene.cursor.matrix[:3]
+                n=0
+                fpins = [o for o in context.scene.objects[:] if o.get("bdental_type")=="bdental_fixing_pin"]
+                if fpins : n = len(fpins)
+                
                 
                 #Add pin
+                bpy.ops.object.select_all(action="DESELECT")
                 pin = AppendObject("fixing_pin", coll_name="GUIDE Components")
                 pin.name = f"Fixing_Pin({n+1})"
                 pin["bdental_type"] ="bdental_fixing_pin"
@@ -5997,27 +5993,31 @@ class BDENTAL_OT_AddFixingPin(bpy.types.Operator):
                 pin.dimensions[:2] = [  self.drill_diameter,
                                         self.drill_diameter]
                 pin.location = [0,0,-self.bone_depth]
-                with context.temp_override(active_object=pin):
-                    bpy.ops.object.transform_apply(location=True, rotation=False, scale=True)
+                pin.select_set(True)
+                context.view_layer.objects.active = pin
+                # with context.temp_override(active_object=pin):
+                bpy.ops.object.transform_apply(location=True, rotation=False, scale=True)
                 
                 pin.matrix_world[:3] = context.scene.cursor.matrix[:3] 
-                
-                # sleeve = AppendObject(
-                #     "sleeve", coll_name="GUIDE Components")
-                # sleeve.name = f"_ADD_Fixing_Sleeve({n+1})"
-                # sleeve["bdental_type"] ="bdental_fixing_sleeve"
 
-                # bpy.ops.object.select_all(action="DESELECT")
-                # sleeve.select_set(True)
-                # context.view_layer.objects.active = sleeve
-
-                # # sleeve.active_material = self.mat_add
-                # sleeve.dimensions = [self.sleeve_diameter,
-                #                         self.sleeve_diameter, self.drill_lenght-self.bone_depth]
                 
+                #Add sleeve
+                bpy.ops.object.select_all(action="DESELECT")
+                sleeve = AppendObject(
+                    "sleeve", coll_name="GUIDE Components")
+                sleeve.name = f"_ADD_Fixing_Sleeve({n+1})"
+                sleeve["bdental_type"] ="bdental_fixing_sleeve"
+                sleeve.dimensions = [self.sleeve_diameter,
+                                    self.sleeve_diameter,
+                                    self.drill_lenght-self.bone_depth]
+                sleeve.select_set(True)
+                context.view_layer.objects.active = sleeve
                 # with context.temp_override(active_object=sleeve):
-                #     bpy.ops.object.transform_apply(location=True, rotation=False, scale=True)
-                # sleeve.matrix_world[:3] = context.scene.cursor.matrix[:3]
+                bpy.ops.object.transform_apply(location=True, rotation=False, scale=True)
+                sleeve.matrix_world[:3] = context.scene.cursor.matrix[:3]
+                
+                
+                
                 
                 
                 child_of = sleeve.constraints.new(type="CHILD_OF")
@@ -6037,22 +6037,11 @@ class BDENTAL_OT_AddFixingPin(bpy.types.Operator):
                 pin.select_set(True)
                 context.view_layer.objects.active = pin
                 bpy.ops.wm.bdental_lock_to_pointer()
-                # try :
-                #     bpy.ops.object.select_all(action="DESELECT")
-                #     pin.select_set(True)
-                #     context.view_layer.objects.active = pin
-                #     bpy.ops.wm.bdental_lock_to_pointer()
+                message = [f"{pin.name} added.",
+                    "<Left click> : Set position", "<ENTER> add pin  <ESC> to cancell"]
+                update_info(message)
 
-                # except Exception as er:
-                #     print("catched error : ", er)
-                #     pass
-                
-
-                # override, _, _ = CtxOverride(context)
-                # bpy.ops.wm.tool_set_by_id(
-                #     override, name="builtin.transform")
-
-                # return {'FINISHED'}
+                return {'RUNNING_MODAL'}
         return {'RUNNING_MODAL'}
 
 
