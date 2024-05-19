@@ -307,7 +307,7 @@ if sys.platform == "win32":
 DRAW_HANDLERS = []
 VERSION_URL = "https://raw.githubusercontent.com/issamdakir/Bdental-3-win/main/Resources/BDENTAL_Version.txt"
 GITHUB_CMD = "curl -L https://github.com/issamdakir/Bdental-3-win/zipball/main"
-TELEGRAM_LINK = "https://t.me/bdental_support"
+TELEGRAM_LINK = "https://t.me/bdental3"
 REQ_DICT = {
     "SimpleITK": "SimpleITK",
     "vtk": "vtk",
