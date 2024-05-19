@@ -56,7 +56,7 @@ DRAW_HANDLERS = []
 SLICES_TXT_HANDLER = []
 message_queue = Queue()
 FLY_IMPLANT_INDEX = None
-TELEGRAM_LINK = "https://t.me/bdental_support"
+TELEGRAM_LINK = "https://t.me/bdental3"
 VERSION_URL = "https://raw.githubusercontent.com/issamdakir/Bdental-3-win/main/Resources/BDENTAL_Version.txt"
 RESTART = False
 #######################################################################################
