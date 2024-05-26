@@ -75,7 +75,7 @@ def close_asset_browser(context, area=None):
         space_data=s,
         region=r):
             bpy.ops.screen.area_close()
-        return
+        return 1
     
     
     scr = context.screen
@@ -93,7 +93,8 @@ def close_asset_browser(context, area=None):
             space_data=s,
             region=r):
                 bpy.ops.screen.area_close()
-            return
+            return 1
+    return 0
 
 
 def open_asset_browser():

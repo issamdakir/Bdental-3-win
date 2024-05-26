@@ -44,6 +44,8 @@ addon_dir = dirname(dirname(abspath(__file__)))
 Addon_Version_Path = join(addon_dir, "Resources","BDENTAL_Version.txt")
 DataBlendFile = join(addon_dir, "Resources", "BlendData",
                      "BDENTAL_BlendData.blend")
+bdental_app_template_zip_file = join(
+    addon_dir, "Resources", "bdental_app_template.zip")
 lib_name='Bdental Library'
 
 # "VGS_Marcos_modified_MinMax"#"VGS_Marcos_modified"  # "VGS_Marcos_01" "VGS_Dakir_01"
@@ -220,8 +222,8 @@ class BDENTAL_OT_AssetBrowserToggle(bpy.types.Operator):
     """ Split area 3d and load asset browser """
 
     bl_idname = "wm.bdental_asset_browser_toggle"
-    bl_label = "Open Bdental Library"
-
+    bl_label = "Bdental Library"
+    can_update = False
     # @classmethod
     # def poll(cls, context):
     #     # bdental_main = bpy.data.workspaces.get("Bdental Main")
@@ -230,7 +232,28 @@ class BDENTAL_OT_AssetBrowserToggle(bpy.types.Operator):
     #     # if not context.workspace == bdental_main :
     #     #     return 0
     #     return context.workspace.name == "Bdental Main"
+    def defer(self):
+        global lib_name
+        params = self.asset_browser_space.params
+        if not params:
+            return 0
+        
 
+        try:
+            params.asset_library_ref = lib_name
+            
+        except TypeError:
+            # If the reference doesn't exist.
+            params.asset_library_ref = 'LOCAL'           
+
+        params.import_type = 'APPEND'
+        self.can_update = True
+        return None
+
+    def modal(self, context, event):
+        if self.can_update :
+            return {'FINISHED'}
+        return {'PASS_THROUGH'}
     def execute(self, context):
         global lib_name
 
@@ -240,68 +263,16 @@ class BDENTAL_OT_AssetBrowserToggle(bpy.types.Operator):
             sleep(3)
             update_info()
             return {"CANCELLED"}
-        
-        
-        scr = context.screen
-        areas3d = []
-        areas_asset = []
-        for a in scr.areas :
-            if a.type == "FILE_BROWSER" :
-                if a.ui_type == 'ASSETS' :
-                    areas_asset.append(a)
-            elif a.type == "VIEW_3D":
-                areas3d.append(a)
-        if areas_asset :
-            a = areas_asset[0]
-            r = [r for r in a.regions if r.type == "WINDOW"][0]
-            s = a.spaces.active
-            with context.temp_override(
-            area=a, 
-            space_data=s,
-            region=r):
-                bpy.ops.screen.area_close()
-            return{"FINISHED"}
-        if areas3d :
-            a3d = areas3d[0]
-            r3d = [r for r in a3d.regions if r.type == "WINDOW"][0]
-            s3d = a3d.spaces.active
-            
-            with context.temp_override(
-                area=a3d, 
-                space_data=s3d,
-                region=r3d):
-                
-                    bpy.ops.screen.area_split(direction="VERTICAL", factor=1 / 3)
-                    scr.update_tag()
-                    
-            a2 = [a for a in scr.areas if a.type == "VIEW_3D"][-1]
-            a2.type = "FILE_BROWSER"
-            a2.ui_type = 'ASSETS'
-            scr.update_tag()
-            # a2.tag_redraw()
-            # a2.ui_type = 'ASSETS'
-            # a2.tag_redraw()
-            # areas_asset = [a for a in scr.areas if a.ui_type == 'ASSETS']
-            # a2 = areas_asset[0]
-            # spaces = [s.type for s in a2.spaces]
-            # update_info(a2.type)
-            # spaces = [s.type for s in a2.spaces]
-            # update_info(spaces)
-            # s2 = [s for s in a2.spaces if s.type == "FILE_BROWSER"][0]
-            # for i in range(10):
-            #     if s2.params :
-            #         s2.params.asset_library_ref = lib_name
-            #         break
-                    # message = [f"{i} : ok"]
-                # else :
-                #     message = [f"{i} : none"]
-                # update_info(message)
-                # sleep(1)
-            # s2.params.asset_library_ref = lib_name
-            
-                
 
+        _close = close_asset_browser(context)
+        if not _close :
+            self.asset_browser_area , self.asset_browser_space = open_asset_browser()
+            bpy.app.timers.register(self.defer)
+            context.window_manager.modal_handler_add(self)
+            return {"RUNNING_MODAL"}
         return{"FINISHED"}
+        
+        
     
 class BDENTAL_OT_SetConfig(bpy.types.Operator):
     """ set bdental config """
@@ -380,14 +351,23 @@ class BDENTAL_OT_AddAppTemplate(bpy.types.Operator):
     display_message: BoolProperty(default=False) # type: ignore
 
     def execute(self, context):
-        success = Add_bdental_app_template()
-        t = threading.Thread(
-            target=start_blender_session,
-            args=[],
-            daemon=True,
-            )
-        t.start()
-        sys.exit(0)
+        try :
+            bpy.ops.preferences.app_template_install( filepath=bdental_app_template_zip_file)
+        except Exception as er :
+            repport = {
+                "error context" : "bdental app tmplate install operator",
+                "error": er
+                }
+            print(f"Handled error : {repport}")
+        
+        # success = Add_bdental_app_template()
+        # t = threading.Thread(
+        #     target=start_blender_session,
+        #     args=[],
+        #     daemon=True,
+        #     )
+        # t.start()
+        # sys.exit(0)
         # print(f"add bdental app-template : Success = {bool(success)}")
         # if success :
         #     sleep(3)
