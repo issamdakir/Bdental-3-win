@@ -788,7 +788,7 @@ class BDENTAL_OT_add_3d_text(bpy.types.Operator):
     def modal(self, context, event):
         if not event.type in {'ESC', 'RET'}:
             return {'PASS_THROUGH'}
-        if event.type in {'ESC'}:
+        elif event.type in {'ESC'}:
             try:
                 bpy.data.objects.remove(self.text_ob)
             except:
@@ -797,7 +797,8 @@ class BDENTAL_OT_add_3d_text(bpy.types.Operator):
             sleep(1)
             update_info()
             return {'CANCELLED'}
-        if event.type in {'RET'}:
+        
+        elif event.type in {'RET'} and event.value == "PRESS":
             if self.text_mode == "Embossed":
                 self.embosse_text(context)
             else:
@@ -845,14 +846,19 @@ class BDENTAL_OT_add_3d_text(bpy.types.Operator):
 
     def embosse_text(self, context):
         update_info(["Text Remesh..."])
-        context.view_layer.objects.active = self.text_ob
-        bpy.ops.object.mode_set(mode="OBJECT")
-        bpy.ops.object.select_all(action="DESELECT")
-        self.text_ob.select_set(True)
-        bpy.ops.object.convert(target="MESH")
-        remesh_modif = self.text_ob.modifiers.new("REMESH", "REMESH")
-        remesh_modif.voxel_size = 0.05
-        bpy.ops.object.convert(target="MESH")
+        with context.temp_override(active_object=self.text_ob):
+            remesh_modif = self.text_ob.modifiers.new("REMESH", "REMESH")
+            remesh_modif.voxel_size = 0.05
+            bpy.ops.object.convert(target="MESH")
+            
+        # context.view_layer.objects.active = self.text_ob
+        # bpy.ops.object.mode_set(mode="OBJECT")
+        # bpy.ops.object.select_all(action="DESELECT")
+        # self.text_ob.select_set(True)
+        # bpy.ops.object.convert(target="MESH")
+        # remesh_modif = self.text_ob.modifiers.new("REMESH", "REMESH")
+        # remesh_modif.voxel_size = 0.05
+        # bpy.ops.object.convert(target="MESH")
 
         for mat_slot in self.text_ob.material_slots:
             bpy.ops.object.material_slot_remove({"object": self.text_ob})
@@ -5510,14 +5516,11 @@ class BDENTAL_OT_guide_3d_text(bpy.types.Operator):
 
     def text_to_mesh(self, context):
         update_info(["Text Remesh..."])
-        context.view_layer.objects.active = self.text_ob
-        bpy.ops.object.mode_set(mode="OBJECT")
-        bpy.ops.object.select_all(action="DESELECT")
-        self.text_ob.select_set(True)
-        bpy.ops.object.convert(target="MESH")
-        remesh_modif = self.text_ob.modifiers.new("REMESH", "REMESH")
-        remesh_modif.voxel_size = 0.05
-        bpy.ops.object.convert(target="MESH")
+        with context.temp_override(active_object=self.text_ob):
+        
+            remesh_modif = self.text_ob.modifiers.new("REMESH", "REMESH")
+            remesh_modif.voxel_size = 0.05
+            bpy.ops.object.convert(target="MESH")
 
 
 class BDENTAL_OT_GuideAddComponent(bpy.types.Operator):
@@ -5750,10 +5753,11 @@ class BDENTAL_OT_GuideAddComponent(bpy.types.Operator):
         self.mat_cut = bpy.data.materials.get(
             "mat_component_cut") or bpy.data.materials.new(name="mat_component_cut")
         self.mat_cut.diffuse_color = [1.0, 0.0, 0.0, 1.0]
-
+        
+        self.preffix = ""
         if self.component_type == "ADD":
             self.preffix = "_ADD_"
-
+        
         # elif self.component_type == "CUT" or self.guide_component == "Fixing Sleeve/Pin":
         #     self.preffix = ""
         
@@ -10447,7 +10451,7 @@ class BDENTAL_OT_CurveCutter2_Cut_New(bpy.types.Operator):
         bpy.ops.mesh.separate(type="LOOSE")
 
         for obj in bpy.context.visible_objects:
-            if not obj.data.polygons or len(obj.data.polygons) < 10:
+            if not obj.data or not obj.data.polygons or len(obj.data.polygons) < 10:
                 bpy.data.objects.remove(obj)
             else :
                 context.view_layer.objects.active = obj
