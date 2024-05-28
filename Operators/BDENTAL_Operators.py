@@ -775,7 +775,7 @@ class BDENTAL_OT_add_3d_text(bpy.types.Operator):
         self.text_ob.active_material = mat
 
         bpy.context.scene.tool_settings.use_snap = True
-        bpy.context.scene.tool_settings.snap_elements = {'FACE'}
+        bpy.context.scene.tool_settings.snap_elements = {'FACE_NEAREST'}
         bpy.context.scene.tool_settings.use_snap_align_rotation = True
         bpy.context.scene.tool_settings.use_snap_rotate = True
 
