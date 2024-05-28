@@ -799,12 +799,27 @@ class BDENTAL_OT_add_3d_text(bpy.types.Operator):
             return {'CANCELLED'}
         
         elif event.type in {'RET'} and event.value == "PRESS":
+            update_info(["3D Text processing..."])
+            self.text_ob.select_set(True)
+            self.target.select_set(True)
+            remesh_modif = self.text_ob.modifiers.new("REMESH", "REMESH")
+            remesh_modif.voxel_size = 0.05
+            with context.temp_override(active_object=self.text_ob):
+                bpy.ops.object.convert(target="MESH")
+                bpy.ops.object.mode_set(mode="OBJECT")
+                # bpy.ops.object.select_all(action="DESELECT")
+                # self.text_ob.select_set(True)
+                # remesh_modif = self.text_ob.modifiers.new("REMESH", "REMESH")
+                # remesh_modif.voxel_size = 0.05
+                # bpy.ops.object.convert(target="MESH")
+            
             if self.text_mode == "Embossed":
                 self.embosse_text(context)
             else:
                 self.engrave_text(context)
 
             bpy.context.scene.tool_settings.use_snap = False
+            bpy.ops.object.select_all(action="DESELECT")
             update_info(["Finished ./"])
             sleep(1)
             update_info()
@@ -812,83 +827,73 @@ class BDENTAL_OT_add_3d_text(bpy.types.Operator):
         return {'RUNNING_MODAL'}
 
     def engrave_text(self, context):
-        update_info(["Text Remesh..."])
-        context.view_layer.objects.active = self.text_ob
-        bpy.ops.object.mode_set(mode="OBJECT")
-        bpy.ops.object.select_all(action="DESELECT")
-        self.text_ob.select_set(True)
-        bpy.ops.object.convert(target="MESH")
-        remesh_modif = self.text_ob.modifiers.new("REMESH", "REMESH")
-        remesh_modif.voxel_size = 0.05
-        bpy.ops.object.convert(target="MESH")
+        
+        
+        # bpy.ops.object.select_all(action="DESELECT")
+        # self.target.select_set(True)
+        # bpy.context.view_layer.objects.active = self.target
 
-        update_info(["Target Remesh..."])
-        bpy.ops.object.select_all(action="DESELECT")
-        self.target.select_set(True)
-        bpy.context.view_layer.objects.active = self.target
+        # remesh_modif = self.target.modifiers.new("REMESH", "REMESH")
+        # remesh_modif.mode = "SMOOTH"
+        # remesh_modif.octree_depth = 8
 
-        remesh_modif = self.target.modifiers.new("REMESH", "REMESH")
-        remesh_modif.mode = "SMOOTH"
-        remesh_modif.octree_depth = 8
+        # voxel_remesh = self.target.modifiers.new("VOXEL", "REMESH")
 
-        voxel_remesh = self.target.modifiers.new("VOXEL", "REMESH")
+        # bpy.ops.object.convert(target="MESH")
 
-        bpy.ops.object.convert(target="MESH")
+        # update_info(["Text Engraving ..."])
+        for mat_slot in self.text_ob.material_slots:
+            bpy.ops.object.material_slot_remove({"object": self.text_ob})
 
-        update_info(["Text Engraving ..."])
         difference_modif = self.target.modifiers.new("DIFFERENCE", "BOOLEAN")
         difference_modif.object = self.text_ob
         difference_modif.operation = "DIFFERENCE"
-        bpy.ops.object.convert(target="MESH")
+        with context.temp_override(active_object=self.target):
+            bpy.ops.object.convert(target="MESH")
 
         bpy.data.objects.remove(self.text_ob)
         context.scene.BDENTAL_Props.text = "BDental"
 
     def embosse_text(self, context):
-        update_info(["Text Remesh..."])
-        with context.temp_override(active_object=self.text_ob):
-            remesh_modif = self.text_ob.modifiers.new("REMESH", "REMESH")
-            remesh_modif.voxel_size = 0.05
-            bpy.ops.object.convert(target="MESH")
-            
-        # context.view_layer.objects.active = self.text_ob
-        # bpy.ops.object.mode_set(mode="OBJECT")
-        # bpy.ops.object.select_all(action="DESELECT")
-        # self.text_ob.select_set(True)
-        # bpy.ops.object.convert(target="MESH")
-        # remesh_modif = self.text_ob.modifiers.new("REMESH", "REMESH")
-        # remesh_modif.voxel_size = 0.05
-        # bpy.ops.object.convert(target="MESH")
-
+        
         for mat_slot in self.text_ob.material_slots:
             bpy.ops.object.material_slot_remove({"object": self.text_ob})
-        sleep(1)
-        update_info(["Target Remesh..."])
-        bpy.ops.object.select_all(action="DESELECT")
-        self.target.select_set(True)
-        context.view_layer.objects.active = self.target
 
-        remesh_modif = self.target.modifiers.new("REMESH", "REMESH")
-        remesh_modif.mode = "SMOOTH"
-        remesh_modif.octree_depth = 8
+        union_modif = self.target.modifiers.new("DIFFERENCE", "BOOLEAN")
+        union_modif.object = self.text_ob
+        union_modif.operation = 'UNION'
+        with context.temp_override(active_object=self.target):
+            bpy.ops.object.convert(target="MESH")
 
-        voxel_remesh = self.target.modifiers.new("VOXEL", "REMESH")
-
-        bpy.ops.object.convert(target="MESH")
-
-        update_info(["Text Embossing ..."])
-        # join
-        self.text_ob.select_set(True)
-        bpy.ops.object.join()
-        self.target = context.object
-        voxel_remesh = self.target.modifiers.new("VOXEL", "REMESH")
-
-        bpy.ops.object.convert(target="MESH")
-
-        bpy.ops.object.select_all(action="DESELECT")
-        self.target.select_set(True)
-        context.view_layer.objects.active = self.target
+        bpy.data.objects.remove(self.text_ob)
         context.scene.BDENTAL_Props.text = "BDental"
+        # sleep(1)
+        # update_info(["Target Remesh..."])
+        # bpy.ops.object.select_all(action="DESELECT")
+        # self.target.select_set(True)
+        # context.view_layer.objects.active = self.target
+
+        # remesh_modif = self.target.modifiers.new("REMESH", "REMESH")
+        # remesh_modif.mode = "SMOOTH"
+        # remesh_modif.octree_depth = 8
+
+        # voxel_remesh = self.target.modifiers.new("VOXEL", "REMESH")
+
+        # bpy.ops.object.convert(target="MESH")
+
+        # update_info(["Text Embossing ..."])
+        # join
+        # self.text_ob.select_set(True)
+        # bpy.ops.object.join()
+        # self.target = context.object
+        # voxel_remesh = self.target.modifiers.new("VOXEL", "REMESH")
+
+        # bpy.ops.object.convert(target="MESH")
+
+        # bpy.ops.object.select_all(action="DESELECT")
+        # self.target.select_set(True)
+        # context.view_layer.objects.active = self.target
+        # context.scene.BDENTAL_Props.text = "BDental"
 
 
 class BDENTAL_OT_MPR2(bpy.types.Operator):
