@@ -271,7 +271,7 @@ bl_info = {
     "description": "3D Digital Dentistry",  
     "warning": "",
     "doc_url": "",
-    "tracker_url": "https://t.me/bdental_support",
+    "tracker_url": "https://t.me/bdental3",
     "category": "Dental",  
 }
 #############################################################################################
