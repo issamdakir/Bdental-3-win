@@ -259,66 +259,49 @@ def click_is_in_view3d(context, event) :
         return _is_valid
 
 
-def Add_bdental_app_template() :
-    success = 0
-    binary_dir = dirname(bpy.app.binary_path)
-    version = bpy.app.version_string
-    for d in os.listdir(binary_dir) :
-        if d in version :
-            app_templates_dir = join(binary_dir, d, 'scripts', 'startup', 'bl_app_templates_system')
-            bdental_app_template_dir = join(app_templates_dir, "Bdental_3")
-            if exists(bdental_app_template_dir) :
-                shutil.rmtree(bdental_app_template_dir)
+# def Add_bdental_app_template() :
+#     success = 0
+#     binary_dir = dirname(bpy.app.binary_path)
+#     version = bpy.app.version_string
+#     for d in os.listdir(binary_dir) :
+#         if d in version :
+#             app_templates_dir = join(binary_dir, d, 'scripts', 'startup', 'bl_app_templates_system')
+#             bdental_app_template_dir = join(app_templates_dir, "Bdental_3")
+#             if exists(bdental_app_template_dir) :
+#                 shutil.rmtree(bdental_app_template_dir)
            
-            with zipfile.ZipFile(bdental_app_template_zip_file, 'r') as zip_ref:
-                zip_ref.extractall(app_templates_dir)
-            success = 1 
-    return success
+#             with zipfile.ZipFile(bdental_app_template_zip_file, 'r') as zip_ref:
+#                 zip_ref.extractall(app_templates_dir)
+#             success = 1 
+#     return success
 
 
 def reset_config_folder():
-    addon_dir = dirname(abspath(sys.modules.get('Bdental-3').__file__))
+    global addon_dir
+    global path_to_startup
+    # addon_dir = dirname(abspath(sys.modules.get('Bdental-3').__file__))
     version_dir = dirname(dirname(dirname(addon_dir)))
     print(f"version_dir : {version_dir}")
+    config_dir = None
+    for e in os.listdir(version_dir):
+        fullpath = join(version_dir, e)
+        if isdir(fullpath) and e.lower()=="config":
+            config_dir = fullpath
+            break
+    if not config_dir:
+        config_dir = join(version_dir, "config")
+        os.mkdir(config_dir)
     try :
-        with zipfile.ZipFile(path_to_config_zip_file, 'r') as zip_ref:
-            zip_ref.extractall(version_dir)
-            success = 1
+        shutil.copy2(path_to_startup, config_dir)
+        success = 1
     except : success = 0
-    # binary_dir = dirname(bpy.app.binary_path)
-    # version = bpy.app.version_string
-    # success = 0
-    # for d in os.listdir(binary_dir) :
-    #     if d in version :
-    #         main_dir = join(binary_dir, d)
-    #         for d in os.listdir(main_dir) :
-    #             if d.lower() == "config" :
-    #                 config_path = join(main_dir, d)
-    #                 shutil.rmtree(config_path)
-    #                 break
-    #         config_path = join(main_dir, "config")
-    #         os.mkdir(config_path)
-    #         # bpy.ops.wm.open_mainfile(filepath = path_to_startup)
-    #         with zipfile.ZipFile(path_to_config_zip_file, 'r') as zip_ref:
-    #             zip_ref.extractall(config_path)
-    #         success = 1
-    #         break
+    
     return success
 
-# def fix_config_folder(config_path) :
-#     bpy.ops.wm.open_mainfile(filepath = path_to_startup)
 
-
-#     with zipfile.ZipFile(path_to_config_zip_file, 'r') as zip_ref:
-#         zip_ref.extractall(config_path)
 
 def start_blender_session():
-    print(f"binary path : {bpy.app.binary_path}")
-    filepath = join(addon_dir, "Operators", "add_bdental_asset_library.py")
-    _cmd = f'{bpy.app.binary_path} -P "{filepath}"'
-    # _cmd = f'{bpy.app.binary_path}'
-    print(f"_cmd : {_cmd}")
-    os.system(_cmd)
+    os.system(f'"{bpy.app.binary_path}"')
 
 
 # max radius in meters (=5mm)

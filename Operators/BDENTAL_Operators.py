@@ -275,14 +275,14 @@ class BDENTAL_OT_AssetBrowserToggle(bpy.types.Operator):
         
     
 class BDENTAL_OT_SetConfig(bpy.types.Operator):
-    """ set bdental config """
+    """ Set Bdental config """
 
     bl_idname = "wm.bdental_set_config"
     bl_label = "Set Bdental Interface"
     bl_options = {"REGISTER", "UNDO"}
 
     def draw(self, context):
-        message = ["setting bdental as startup :", "Please save your project (Blender need to restart)"]
+        message = ["Blender need to restart : Please save your project !"]
         layout = self.layout
         layout.alignment = "EXPAND"
         # layout.alert = True
@@ -293,7 +293,7 @@ class BDENTAL_OT_SetConfig(bpy.types.Operator):
         # context.preferences.use_preferences_save = False
         # bpy.ops.wm.save_userpref()
         success = reset_config_folder()
-        print(f"Reset config folder path : Success = {success}")
+        print(f"Reset Bdental config : Success = {success}")
         if success :
             p = context.preferences
             p.inputs.use_auto_perspective = False
