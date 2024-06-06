@@ -45,15 +45,20 @@ _PREFFIX=None
 # Global Variables :
 ProgEvent = vtkCommand.ProgressEvent
 
-addon_dir = dirname(dirname(abspath(__file__)))
-path_to_config_zip_file = join(addon_dir, "Resources", "config.zip")
-bdental_app_template_zip_file = join(
-    addon_dir, "Resources", "bdental_app_template.zip")
 
-path_to_startup = join(addon_dir, "Resources", "startup.blend")
-DataBlendFile = join(addon_dir, "Resources", "BlendData",
+addon_dir = dirname(dirname(abspath(__file__)))
+resources = join(addon_dir, "Resources")
+
+
+path_to_config_zip_file = join(resources, "config.zip")
+bdental_app_template_zip_file = join(resources, "bdental_app_template.zip")
+
+path_to_startup = join(resources, "startup.blend")
+DataBlendFile = join(resources, "BlendData",
                      "BDENTAL_BlendData.blend")
-lib_name='Bdental Library'
+lib_name='Bdental_Library'
+BDENTAL_LIBRARY_PATH = join(resources, lib_name)
+
 
 cm_info = {
     1: (0.348, 0.095),
@@ -63,9 +68,30 @@ cm_info = {
 clip_offset = 1
 github_cmd = "curl -L https://github.com/issamdakir/Bdental-3-win/zipball/main"
 ######################################################################
+def add_bdental_libray():
+    global BDENTAL_LIBRARY_PATH
+    lib_archive_dir_path = join(BDENTAL_LIBRARY_PATH, "lib_archive")
+    if exists(lib_archive_dir_path) :
+        files = glob(join(lib_archive_dir_path, "*"))
+        
+        for f in files :
+            if f.endswith(".zip"):
+                with zipfile.ZipFile(f, 'r') as zip_ref:
+                    zip_ref.extractall(BDENTAL_LIBRARY_PATH)
+            else:
+                shutil.move(f, BDENTAL_LIBRARY_PATH)
+        shutil.rmtree(lib_archive_dir_path)
+
+    user_lib = bpy.context.preferences.filepaths.asset_libraries.get(lib_name) 
+    
+    if user_lib :
+        user_lib.path = BDENTAL_LIBRARY_PATH
+    else :
+        bpy.ops.preferences.asset_library_add(directory=BDENTAL_LIBRARY_PATH)
+
+    return
 def close_asset_browser(context, area=None):
     
-    global lib_name
     if area :
         a = area
         r = [r for r in a.regions if r.type == "WINDOW"][0]
@@ -100,8 +126,6 @@ def close_asset_browser(context, area=None):
 def open_asset_browser():
     global lib_name
     context = bpy.context
-    asset_library_ref_target = lib_name
-    asset_library_ref_fallback = 'LOCAL'
         
     scr = context.screen
     areas3d = []
@@ -131,23 +155,7 @@ def open_asset_browser():
         scr.update_tag()
 
         s2 = a2.spaces.active
-        # # s2.deselect_all()
-
-        # print("a2 spaces : ")
-        # for  s in a2.spaces[:]:
-        #     print(s.type)
-        #     try :
-        #         print(s.params)
-        #     except:
-        #         print("ERROR")
-        # s2=None
-        # s2 = a2.spaces.active
-        # try :
-            
-        #     s2.params.asset_library_ref = lib_name
-        # except Exception as er :
-        #     print("handled error : ",er)
-        # print({"area type":a2.type, "x":a2.x, "y":a2.y})
+        
         return a2,s2
 
 

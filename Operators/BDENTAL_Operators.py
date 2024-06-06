@@ -46,7 +46,7 @@ DataBlendFile = join(addon_dir, "Resources", "BlendData",
                      "BDENTAL_BlendData.blend")
 bdental_app_template_zip_file = join(
     addon_dir, "Resources", "bdental_app_template.zip")
-lib_name='Bdental Library'
+lib_name='Bdental_Library'
 
 # "VGS_Marcos_modified_MinMax"#"VGS_Marcos_modified"  # "VGS_Marcos_01" "VGS_Dakir_01"
 GpShader = "VGS_Dakir_(-400-3000)"#"VGS_Dakir_01"#"VGS_Dakir_MinMax"
@@ -290,11 +290,19 @@ class BDENTAL_OT_SetConfig(bpy.types.Operator):
             layout.label(text=txt)
 
     def execute(self, context):
-        context.preferences.use_preferences_save = False
-        bpy.ops.wm.save_userpref()
+        # context.preferences.use_preferences_save = False
+        # bpy.ops.wm.save_userpref()
         success = reset_config_folder()
         print(f"Reset config folder path : Success = {success}")
         if success :
+            p = context.preferences
+            p.inputs.use_auto_perspective = False
+            p.inputs.use_rotate_around_active = True
+            p.inputs.use_mouse_depth_navigate = True
+            p.inputs.use_zoom_to_mouse = True
+
+            add_bdental_libray()
+            bpy.ops.wm.save_userpref()
             update_info(message=["Bdental Configuration Success."], rect_color=[0,1,0,1])
             sleep(1)
             update_info()
@@ -359,43 +367,14 @@ class BDENTAL_OT_AddAppTemplate(bpy.types.Operator):
                 "error": er
                 }
             print(f"Handled error : {repport}")
+        p = context.preferences
+        p.inputs.use_auto_perspective = False
+        p.inputs.use_rotate_around_active = True
+        p.inputs.use_mouse_depth_navigate = True
+        p.inputs.use_zoom_to_mouse = True
+        add_bdental_libray()
+        bpy.ops.wm.save_userpref()
         
-        # success = Add_bdental_app_template()
-        # t = threading.Thread(
-        #     target=start_blender_session,
-        #     args=[],
-        #     daemon=True,
-        #     )
-        # t.start()
-        # sys.exit(0)
-        # print(f"add bdental app-template : Success = {bool(success)}")
-        # if success :
-        #     sleep(3)
-        #     bpy.ops.wm.read_homefile(app_template="Bdental_3")
-
-        # if self.display_message:
-        #     if success == 0:
-        #         txt = ["Adding Bdental app template : failed!"]
-        #         rgba = [1, 0, 0, 1]
-        #     elif success == 1:
-        #         txt = ["Adding Bdental app template ; Success./"]
-        #         rgba = [0, 1, 0, 1]
-        #     # else:
-        #     #     txt = ["Bdental app template already exists!"]
-        #     #     rgba = [1.0, 0.2, 0.0, 1.0]
-
-        #     update_info(message=txt, rect_color=rgba)
-        #     sleep(3)
-        #     update_info()
-#             # bpy.ops.wm.open_mainfile(filepath = path_to_startup)
-#             # bpy.ops.wm.save_userpref()
-#             t = threading.Thread(
-#             target=start_blender_session,
-#             args=[],
-#             daemon=True,
-#             )
-#             t.start()
-#             sys.exit(0)
 
         return{"FINISHED"}
 

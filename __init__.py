@@ -271,7 +271,7 @@ bl_info = {
     "description": "3D Digital Dentistry",  
     "warning": "",
     "doc_url": "",
-    "tracker_url": "https://t.me/bdental_support",
+    "tracker_url": "https://t.me/bdental3",
     "category": "Dental",  
 }
 #############################################################################################
@@ -345,6 +345,13 @@ def add_bdental_libray():
             else:
                 shutil.move(f, BDENTAL_LIBRARY_PATH)
         shutil.rmtree(lib_archive_dir_path)
+
+    user_lib = bpy.context.preferences.filepaths.asset_libraries.get('Bdental Library') 
+    
+    if user_lib :
+        user_lib.path = BDENTAL_LIBRARY_PATH
+    else :
+        bpy.ops.preferences.asset_library_add(directory=BDENTAL_LIBRARY_PATH)
 
     return
 def ImportReq(REQ_DICT):
@@ -705,7 +712,7 @@ if exists(new_modules) :
 
     shutil.move(new_modules, ADDON_DIR)
 
-add_bdental_libray()
+
 
 if not exists(BDENTAL_MODULES) :
     ERROR_PANEL = True
