@@ -295,6 +295,8 @@ from gpu_extras.batch import batch_for_shader
 import blf
 import tempfile
 from glob import glob
+import requests
+from requests.exceptions import HTTPError, Timeout, RequestException
 
 if sys.platform == "win32":
     sys.stdout.reconfigure(
@@ -305,6 +307,7 @@ if sys.platform == "win32":
 
 
 DRAW_HANDLERS = []
+REPO_URL = "https://github.com/issamdakir/Bdental-3-win/zipball/main"
 VERSION_URL = "https://raw.githubusercontent.com/issamdakir/Bdental-3-win/main/Resources/BDENTAL_Version.txt"
 GITHUB_CMD = "curl -L https://github.com/issamdakir/Bdental-3-win/zipball/main"
 TELEGRAM_LINK = "https://t.me/bdental3"
@@ -506,42 +509,102 @@ def update_info(message=[], remove_handlers=True, button=False, btn_txt="", pour
     if redraw_timer:
         bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
 
+# def addon_download():
+#     global GITHUB_CMD
+
+#     message = []
+#     download_is_ok = False
+#     _dir = None 
+
+#     temp_dir = tempfile.mkdtemp()
+#     os.chdir(temp_dir)
+#     bdental_zip = join(temp_dir,'Bdental-3.zip')
+#     _counter = 0
+#     while _counter <= 3 :
+#         _counter += 1
+#         print(_counter)
+#         os.system(f"{GITHUB_CMD} > {bdental_zip}")
+#         if exists(bdental_zip) :
+#             download_is_ok = True
+#             print(f"number of url curls : {_counter} -> zip file downloaded : ", bdental_zip)
+#             break
+    
+#     if not download_is_ok :
+#         message.extend(["Error : curl bdental.zip download"])
+#         return message,_dir
+
+    
+    
+#     try :
+#         with zipfile.ZipFile(bdental_zip, 'r') as zip_ref:
+#             zip_ref.extractall(temp_dir)
+#     except :
+#         message.extend([f"Error : extract downloaded zip file {bdental_zip}"])
+#         return message,_dir
+#     src = [abspath(e) for e in os.listdir(temp_dir) if isdir(abspath(e))][0]
+#     _dir = join(temp_dir,"Bdental-3")
+#     os.rename(src,_dir)
+#     return message,_dir
+
 def addon_download():
-    global GITHUB_CMD
-
+    global REPO_URL
     message = []
-    download_is_ok = False
     _dir = None 
-
-    temp_dir = tempfile.mkdtemp()
-    os.chdir(temp_dir)
-    bdental_zip = join(temp_dir,'Bdental-3.zip')
-    _counter = 0
-    while _counter <= 3 :
-        _counter += 1
-        print(_counter)
-        os.system(f"{GITHUB_CMD} > {bdental_zip}")
-        if exists(bdental_zip) :
-            download_is_ok = True
-            print(f"number of url curls : {_counter} -> zip file downloaded : ", bdental_zip)
-            break
-    
-    if not download_is_ok :
-        message.extend(["Error : curl bdental.zip download"])
-        return message,_dir
-
-    
-    
     try :
-        with zipfile.ZipFile(bdental_zip, 'r') as zip_ref:
-            zip_ref.extractall(temp_dir)
-    except :
-        message.extend([f"Error : extract downloaded zip file {bdental_zip}"])
-        return message,_dir
-    src = [abspath(e) for e in os.listdir(temp_dir) if isdir(abspath(e))][0]
-    _dir = join(temp_dir,"Bdental-3")
-    os.rename(src,_dir)
+        temp_dir = tempfile.mkdtemp()
+        os.chdir(temp_dir)
+        bdental_zip_local = join(temp_dir,'Bdental-3.zip')
+
+        # Download the file
+        with requests.get(REPO_URL, stream=True, timeout=10) as r:
+            try:
+                r.raise_for_status()
+            except HTTPError as http_err:
+                txt = "HTTP error occurred"
+                print(f"{txt} : {http_err}")
+                message.extend([txt])
+                return message,_dir
+            except ConnectionError as conn_err:
+                txt = "Connection error occurred"
+                print(f"{txt} : {conn_err}")
+                message.extend([txt])
+                return message,_dir
+            except Timeout as timeout_err:
+                txt = "Timeout error occurred"
+                print(f"{txt} : {timeout_err}")
+                message.extend([txt])
+                return message,_dir
+            except RequestException as req_err:
+                txt = f"Error during requests to {REPO_URL}"
+                print(f"{txt} : {req_err}")
+                message.extend([txt])
+                return message,_dir
+            
+            with open(bdental_zip_local, 'wb') as f:
+                for chunk in r.iter_content(chunk_size=8192):
+                    f.write(chunk)
+
+        
+        
+        try :
+            with zipfile.ZipFile(bdental_zip_local, 'r') as zip_ref:
+                zip_ref.extractall(temp_dir)
+        except zipfile.BadZipFile as zip_err:
+            txt = "Error occurred while extracting the downloaded addon ZIP file"
+            print(f"{txt} : {zip_err}")
+            message.extend([txt])
+            return message,_dir
+        
+        src = [abspath(e) for e in os.listdir(temp_dir) if isdir(abspath(e))][0]
+        _dir = join(temp_dir,"Bdental-3")
+        os.rename(src,_dir)
+
+    except OSError as os_err:
+        print(f"OS error occurred: {os_err}")
+    except Exception as err:
+        print(f"An unexpected error occurred: {err}") 
     return message,_dir
+
 
 class BDENTAL_OT_SupportTelegram(bpy.types.Operator):
         """ open telegram bdental support link"""
@@ -616,7 +679,7 @@ class BDENTAL_OT_checkUpdate(bpy.types.Operator):
 
         global ADDON_VER_PATH
         global VERSION_URL
-        import requests
+        
         success = 0
         update_info(message=["Server connect..."], rect_color=[0.7,0.4,0.2,1])
         try :
