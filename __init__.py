@@ -337,6 +337,8 @@ sys.path.insert(0,BDENTAL_MODULES)
 # BDENTAL_MODULES_ZIP = join(RESOURCES, "bdental_modules.zip")
 #############################################################
 def add_bdental_libray():
+    if not exists(BDENTAL_LIBRARY_PATH) :
+        os.mkdir(BDENTAL_LIBRARY_PATH)
     lib_archive_dir_path = join(BDENTAL_LIBRARY_PATH, "lib_archive")
     if exists(lib_archive_dir_path) :
         files = glob(join(lib_archive_dir_path, "*"))
