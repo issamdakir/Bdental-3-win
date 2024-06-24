@@ -1,0 +1,12 @@
+# This is an Asset Catalog Definition file for Blender.
+#
+# Empty lines and lines starting with `#` will be ignored.
+# The first non-ignored line should be the version indicator.
+# Other lines are of the format "UUID:catalog/path/for/assets:simple catalog name"
+
+VERSION 1
+
+0c413245-53e3-4ddf-b56b-e99560522c62:Teeth:Teeth
+4f9a359e-6133-4101-8496-c56e335b07a6:Teeth/0_CHRISTIAN BRENES teeth library:Teeth-0_CHRISTIAN BRENES teeth library
+30b6210e-f795-4a5b-9318-e90e0c4a60da:Teeth/0_CHRISTIAN BRENES teeth library/1 Up:Teeth-0_CHRISTIAN BRENES teeth library-1 Up
+ebd67c5f-3f88-43d7-b123-65154ab85b22:Teeth/0_CHRISTIAN BRENES teeth library/2 Low:Teeth-0_CHRISTIAN BRENES teeth library-2 Low

@@ -297,6 +297,7 @@ import tempfile
 from glob import glob
 import requests
 from requests.exceptions import HTTPError, Timeout, RequestException
+import json
 
 if sys.platform == "win32":
     sys.stdout.reconfigure(
@@ -309,6 +310,8 @@ if sys.platform == "win32":
 DRAW_HANDLERS = []
 REPO_URL = "https://github.com/issamdakir/Bdental-3-win/zipball/main"
 VERSION_URL = "https://raw.githubusercontent.com/issamdakir/Bdental-3-win/main/Resources/BDENTAL_Version.txt"
+ADDON_UPDATE_URL = "https://github.com/issamdakir/Bdental-3-update/zipball/main"
+UPDATE_VERSION_URL = "https://raw.githubusercontent.com/issamdakir/Bdental-3-update/main/data/BDENTAL_Version.txt"
 GITHUB_CMD = "curl -L https://github.com/issamdakir/Bdental-3-win/zipball/main"
 TELEGRAM_LINK = "https://t.me/bdental3"
 REQ_DICT = {
@@ -336,6 +339,17 @@ BDENTAL_MODULES = join(ADDON_DIR, "bdental_modules")
 sys.path.insert(0,BDENTAL_MODULES)
 # BDENTAL_MODULES_ZIP = join(RESOURCES, "bdental_modules.zip")
 #############################################################
+def bdental_log(txt_list,header=None,footer=None):
+    _header, _footer = header, footer
+    if _header is None :
+        _header=f"\n{'#'*20} Bdental log :  {'#'*20}\n"
+    if _footer is None:
+        _footer=f"\n{'#'*20} End log.\  {'#'*20}\n"
+    
+    print(_header)
+    for line in txt_list :
+        print(line)
+    print(_footer)
 def add_bdental_libray():
     if not exists(BDENTAL_LIBRARY_PATH) :
         os.mkdir(BDENTAL_LIBRARY_PATH)
@@ -392,22 +406,22 @@ def start_blender_session():
     # print(f"binary path : {bpy.app.binary_path}")
     os.system(f'"{bpy.app.binary_path}"')
 
-def addon_update(_dir, addon_dir):
+# def addon_update(_dir, addon_dir):
      
-    for elmt in os.listdir(_dir):
-        fullpath = join(addon_dir,elmt)
-        new_elmt = join(_dir,elmt)
-        if exists(fullpath) :
-            if isfile(fullpath) :
-                os.remove(fullpath)
-                shutil.move(new_elmt, addon_dir)
-            else :
-                if not "bdental_modules" in elmt.lower() :
-                    shutil.rmtree(fullpath)
-                    shutil.move(new_elmt, addon_dir)
-                else :
-                    resources = join(addon_dir, "Resources")
-                    shutil.move(new_elmt, resources)
+#     for elmt in os.listdir(_dir):
+#         fullpath = join(addon_dir,elmt)
+#         new_elmt = join(_dir,elmt)
+#         if exists(fullpath) :
+#             if isfile(fullpath) :
+#                 os.remove(fullpath)
+#                 shutil.move(new_elmt, addon_dir)
+#             else :
+#                 if not "bdental_modules" in elmt.lower() :
+#                     shutil.rmtree(fullpath)
+#                     shutil.move(new_elmt, addon_dir)
+#                 else :
+#                     resources = join(addon_dir, "Resources")
+#                     shutil.move(new_elmt, resources)
 
 def exit_blender():
     sys.exit(0)
@@ -511,6 +525,15 @@ def update_info(message=[], remove_handlers=True, button=False, btn_txt="", pour
     if redraw_timer:
         bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
 
+def write_json(Dict,outPath) :
+    jsonString = json.dumps(Dict,indent=4)
+    with open(outPath, 'w') as wf :
+        wf.write(jsonString)
+
+def open_json(jsonPath) :
+    with open(jsonPath, "r") as f:
+        dataDict = json.load(f)
+    return dataDict
 # def addon_download():
 #     global GITHUB_CMD
 
@@ -607,6 +630,94 @@ def addon_download():
         print(f"An unexpected error occurred: {err}") 
     return message,_dir
 
+def addon_update_download():
+    global ADDON_UPDATE_URL
+    message = []
+    update_root = None 
+    try :
+        temp_dir = tempfile.mkdtemp()
+        os.chdir(temp_dir)
+        Bdental_3_update_zip_local = join(temp_dir,'Bdental_3_update.zip')
+
+        # Download the file
+        with requests.get(ADDON_UPDATE_URL, stream=True, timeout=10) as r:
+            try:
+                r.raise_for_status()
+            except HTTPError as http_err:
+                txt = "HTTP error occurred"
+                bdental_log([f"{txt} : {http_err}"])
+                message.extend([txt])
+                return message,update_root
+            except ConnectionError as conn_err:
+                txt = "Connection error occurred"
+                bdental_log([f"{txt} : {conn_err}"])
+                message.extend([txt])
+                return message,update_root
+            except Timeout as timeout_err:
+                txt = "Timeout error occurred"
+                bdental_log([f"{txt} : {timeout_err}"])
+                message.extend([txt])
+                return message,update_root
+            except RequestException as req_err:
+                txt = f"Error during requests to {REPO_URL}"
+                bdental_log([f"{txt} : {req_err}"])
+                message.extend([txt])
+                return message,update_root
+            
+            with open(Bdental_3_update_zip_local, 'wb') as f:
+                for chunk in r.iter_content(chunk_size=8192):
+                    f.write(chunk)
+
+        
+        
+        try :
+            with zipfile.ZipFile(Bdental_3_update_zip_local, 'r') as zip_ref:
+                zip_ref.extractall(temp_dir)
+        except zipfile.BadZipFile as zip_err:
+            txt = "Error occurred while extracting the downloaded addon ZIP file"
+            bdental_log([f"{txt} : {zip_err}"])
+            message.extend([txt])
+            return message,update_root
+        
+        src = [abspath(e) for e in os.listdir(temp_dir) if isdir(abspath(e))][0]
+        update_root = join(temp_dir,"Bdental-3-update")
+        os.rename(src,update_root)
+        return message,update_root
+
+    except OSError as os_err:
+        bdental_log([f"OS error occurred: {os_err}"])
+        message.extend([txt])
+        return message,update_root
+    except Exception as err:
+        bdental_log([f"An unexpected error occurred: {err}"]) 
+        message.extend([txt])
+        return message,update_root
+
+def addon_update_preinstall(update_root):
+    global ADDON_DIR
+    update_data_map_json = join(update_root, "update_data_map.json")
+    update_data_map_dict = open_json(update_data_map_json)
+    update_data_dir = join(update_root, "data")
+    items = os.listdir(update_data_dir)
+    update_data_dict = {join(update_data_dir,i) : join(ADDON_DIR,*update_data_map_dict.get(i)) for i in items}
+    for src,dst in update_data_dict.items():
+        if not "bdental_modules" in src.lower() :
+            if exists(dst) :
+                if isfile(dst) :
+                    os.remove(dst)
+                else :
+                    shutil.rmtree(dst)
+            else :
+                if not exists(dirname(dst)) :
+                    os.makedirs(dirname(dst))
+
+            shutil.move(src, dirname(dst))
+        else :
+            resources = join(ADDON_DIR, "Resources")
+            shutil.move(src, resources)
+
+     
+    
 
 class BDENTAL_OT_SupportTelegram(bpy.types.Operator):
         """ open telegram bdental support link"""
@@ -647,30 +758,38 @@ class BDENTAL_OT_checkUpdate(bpy.types.Operator):
 
     txt = []
     restart = 0
-    def draw(self, context):
+    
+    def modal(self, context, event):
+        if not event.type in {'ESC', 'RET'}:
+            return {'PASS_THROUGH'}
+
+        elif event.type in {'ESC'}:
+            update_info(["Bdental update Cancelled./"])
+            sleep(1)
+            update_info()
+            return {'CANCELLED'}
         
-        layout = self.layout
-        layout.alignment = "EXPAND"
-        layout.alert = True
-        for t in self.txt :
-            layout.label(text=t)
-    
-    
+        elif event.type in {'RET'} and event.value == "PRESS":
+            global ADDON_DIR
+            update_info(["Downloading..."])
+            _message, update_root = addon_update_download()
+            if _message :
+                bdental_log(_message)
+                update_info(message=_message, rect_color=[1,0,0,0.7])
+                sleep(3)
+                update_info()
+                return{"CANCELLED"}
             
-    def execute(self, context):
-        global ADDON_DIR
+            update_info(message=["Preparing update..."],rect_color=[0.2,1,0.2,1])
+            addon_update_preinstall(update_root)
+            add_bdental_libray()
+            update_info(["Please restart blender to finalize Bdental update."])
+            sleep(5)
+            update_info()
+            
+            return {'FINISHED'}
+        return {'RUNNING_MODAL'}
         
-        t1 = threading.Thread(
-                target=start_blender_session,
-                args=[],
-                daemon=True,
-                )
-        
-        addon_update(self._dir, ADDON_DIR)
-        t1.start()
-        exit_blender()
-        
-        return{"FINISHED"}
 
     def invoke(self, context, event):
         if not isConnected() :
@@ -680,16 +799,19 @@ class BDENTAL_OT_checkUpdate(bpy.types.Operator):
             return{"CANCELLED"}
 
         global ADDON_VER_PATH
-        global VERSION_URL
+        global UPDATE_VERSION_URL
         
         success = 0
         update_info(message=["Server connect..."], rect_color=[0.7,0.4,0.2,1])
         try :
-            r = requests.get(VERSION_URL)
+            r = requests.get(UPDATE_VERSION_URL)
             success = r.ok
         except Exception as er :
-            print(f"request github bdental version error : {er}")
+            txt_list = [f"request github bdental version error : {er}"]
+            bdental_log(txt_list)
+            
         if not success :
+            bdental_log([f"request response = {r.text}"])
             update_info(message=["Bdental update : server conexion error !"], rect_color=[1,0,0,0.7])
             sleep(3)
             update_info()
@@ -697,49 +819,30 @@ class BDENTAL_OT_checkUpdate(bpy.types.Operator):
 
         last_txt, last_num_txt = r.text.split(";")
         last_num = int(last_num_txt)
-
-
+        current_txt = "unknown"
+        txt_list = [f"Bdental addon update check : Current = {current_txt} Last release = {last_txt}"]
+        
         if exists(ADDON_VER_PATH):
             with open(ADDON_VER_PATH, "r") as rf:
                 lines = rf.readlines()
                 current_txt, current_num = lines[0].split(";")
                 current_num = int(current_num)
                 
-            log_txt = [f"Bedental addon update check :\nCurrent = {current_txt}\nLast release = {last_txt}"]
-            for t in log_txt :
-                print(t)
+            txt_list = [f"Bdental addon update check : Current version = {current_txt} / Last version = {last_txt}"]
+            
             
             if last_num <= current_num :
-                update_info(message=["Bdental is up to date."], rect_color=[0,1,0.2,0.7])
+                txt_list += ["Bdental is up to date."]
+                bdental_log(txt_list)
+                update_info(message=txt_list, rect_color=[0,1,0.2,0.7])
                 sleep(3)
                 update_info()
                 return{"CANCELLED"}
 
-            update_info(message=[f"new version availible ({last_txt}) -> Downloading ..."], rect_color=[0.7,0.4,0.2,1])
-        else :
-            update_info(message=[f"Current version unknown -> Downloading last version ({last_txt}) ..."], rect_color=[0.7,0.4,0.2,1])
-        self.message, self._dir = addon_download()
-        if self.message :
-            update_info(message=self.message, rect_color=[1,0,0,0.7])
-            sleep(3)
-            update_info()
-            return{"CANCELLED"}
+        update_info(message=txt_list+["<ENTER> : to install last update / <ESC> : to cancel"], rect_color=[0.7,0.4,0.2,1])
+        context.window_manager.modal_handler_add(self)
+        return {'RUNNING_MODAL'}
 
-        update_info(message=["Update is ready !"],rect_color=[0.2,1,0.2,1])
-        sleep(2)
-        update_info()
-        self.txt = [
-        "",
-        "Update is ready",
-        "press OK to confirm",
-        "Blender will restart automatically!",
-        "",
-        ]
-
-        
-
-        wm = context.window_manager
-        return wm.invoke_props_dialog(self,width=500)
 
 class BDENTAL_PT_ModulesErrorPanel(bpy.types.Panel):
         """ Modules error panel"""
@@ -765,9 +868,10 @@ class BDENTAL_PT_ModulesErrorPanel(bpy.types.Panel):
 
 
 ###################################################
-
-print(f"bdental version : {bl_info.get('version')}")
-print(f"bdental version date: {ADDON_VER_DATE}")
+txt_list = [f"bdental version : {bl_info.get('version')}", f"bdental version date: {ADDON_VER_DATE}"]
+bdental_log(txt_list)
+# print(f"bdental version : {bl_info.get('version')}")
+# print(f"bdental version date: {ADDON_VER_DATE}")
 
 new_modules = join(RESOURCES, "bdental_modules")
 if exists(new_modules) :
