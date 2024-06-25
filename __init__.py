@@ -840,7 +840,7 @@ class BDENTAL_OT_checkUpdate(bpy.types.Operator):
             
             
             if last_num <= current_num :
-                txt_list += ["Bdental is up to date."]
+                txt_list = ["Bdental is up to date."]
                 bdental_log(txt_list)
                 update_info(message=txt_list, rect_color=[0,1,0.2,0.7])
                 sleep(3)
