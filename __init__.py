@@ -287,7 +287,7 @@ import zipfile
 import socket
 import webbrowser
 from importlib import import_module
-from os.path import dirname, join, abspath, expanduser,exists, isfile, isdir
+from os.path import dirname,basename, join, abspath, expanduser,exists, isfile, isdir
 from time import sleep
 import threading
 import gpu
@@ -362,6 +362,10 @@ def add_bdental_libray():
                 with zipfile.ZipFile(f, 'r') as zip_ref:
                     zip_ref.extractall(BDENTAL_LIBRARY_PATH)
             else:
+                dst = join(BDENTAL_LIBRARY_PATH, basename(f))
+                if exists(dst):
+                    os.remove(dst)
+
                 shutil.move(f, BDENTAL_LIBRARY_PATH)
         shutil.rmtree(lib_archive_dir_path)
 
@@ -699,6 +703,10 @@ def addon_update_preinstall(update_root):
     update_data_map_dict = open_json(update_data_map_json)
     update_data_dir = join(update_root, "data")
     items = os.listdir(update_data_dir)
+    # update_data_dict = {}
+    # for i in items :
+    #     k = join(update_data_dir,i)
+    #     v = join(ADDON_DIR,*update_data_map_dict.get(i))
     update_data_dict = {join(update_data_dir,i) : join(ADDON_DIR,*update_data_map_dict.get(i)) for i in items}
     for src,dst in update_data_dict.items():
         if not "bdental_modules" in src.lower() :
@@ -771,7 +779,7 @@ class BDENTAL_OT_checkUpdate(bpy.types.Operator):
         
         elif event.type in {'RET'} and event.value == "PRESS":
             global ADDON_DIR
-            update_info(["Downloading..."])
+            update_info(["Downloading..."], rect_color=[0.7,0.4,0.2,1])
             _message, update_root = addon_update_download()
             if _message :
                 bdental_log(_message)
@@ -780,12 +788,12 @@ class BDENTAL_OT_checkUpdate(bpy.types.Operator):
                 update_info()
                 return{"CANCELLED"}
             
-            update_info(message=["Preparing update..."],rect_color=[0.2,1,0.2,1])
+            update_info(message=["Preparing update..."],rect_color=[0.7,0.4,0.2,1])
             addon_update_preinstall(update_root)
             add_bdental_libray()
-            update_info(["Please restart blender to finalize Bdental update."])
-            sleep(5)
-            update_info()
+            update_info(["Please restart blender to finalize Bdental update."], rect_color=[0.4,0.4,0.1,1])
+            # sleep(5)
+            # update_info()
             
             return {'FINISHED'}
         return {'RUNNING_MODAL'}
