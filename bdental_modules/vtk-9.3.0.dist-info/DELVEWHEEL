@@ -1,2 +1,0 @@
-Version: 1.5.1
-Arguments: ['C:\\glr\\builds\\vtk\\vtk-ci-ext\\0\\build\\venv\\Scripts\\delvewheel', 'repair', '--add-path', 'bin;c:\\glr\\builds\\vtk\\vtk-ci-ext\\0\\.gitlab\\osmesa\\bin', 'C:\\glr\\builds\\vtk\\vtk-ci-ext\\0\\build\\dist\\vtk-9.3.0-cp310-cp310-win_amd64.whl']
